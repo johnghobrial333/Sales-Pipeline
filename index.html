@@ -567,8 +567,8 @@ input[type=checkbox]{width:14px;height:14px;accent-color:var(--accent);cursor:po
 // STEP 3: Copy the Bin ID and your API Key (from Account > API Keys)
 // STEP 4: Paste them here:
 
-var JSONBIN_BIN_ID  = '';   // e.g. '6634abc123def456'
-var JSONBIN_API_KEY = '';   // e.g. '$2a$10$...'
+var JSONBIN_BIN_ID  = '69f6976036566621a81afa2e';   // e.g. '6634abc123def456'
+var JSONBIN_API_KEY = '$2a$10$6ev4NWblgLVAIjaGoyJBE.LtfSOERyw.vipHvbaX0X9vYB8s5GQoi';   // e.g. '$2a$10$...'
 
 // ── PASSWORDS ──────────────────────────────────────────────
 var PASSWORDS = {'North America':'John','South America':'Karim','EMEA':'Dina','ASPC':'Raj','admin':'John7543'};
@@ -605,7 +605,8 @@ try{var _lr=localStorage.getItem('vitaLogLastRead');if(_lr)logLastRead=Number(_l
 
 function isCloudConfigured(){
   return JSONBIN_BIN_ID && JSONBIN_API_KEY &&
-         JSONBIN_BIN_ID !== '' && JSONBIN_API_KEY !== '';
+         JSONBIN_BIN_ID !== '' && JSONBIN_API_KEY !== '' &&
+         JSONBIN_BIN_ID !== 'YOUR_BIN_ID_HERE' && JSONBIN_API_KEY !== 'YOUR_API_KEY_HERE';
 }
 
 function showCloudStatus(msg, type){
