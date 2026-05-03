@@ -87,6 +87,8 @@ body{background:var(--bg);color:var(--text);font-family:'DM Mono',monospace;min-
 .btn-outline:hover{border-color:var(--text2);color:var(--text);}
 .btn-xsm{background:none;color:var(--danger);border:1px solid var(--danger);font-size:10px;padding:3px 8px;cursor:pointer;font-family:'DM Mono',monospace;transition:all 0.2s;}
 .btn-xsm:hover{background:var(--danger);color:#fff;}
+.btn-edit{background:none;color:var(--accent2);border:1px solid var(--accent2);font-size:10px;padding:3px 8px;cursor:pointer;font-family:'DM Mono',monospace;transition:all 0.2s;margin-right:4px;}
+.btn-edit:hover{background:var(--accent2);color:#000;}
 .filter-bar{display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap;padding:14px 16px;background:var(--surface);border:1px solid var(--border);}
 .filter-label{font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--text3);white-space:nowrap;}
 .filter-input{padding:8px 12px;background:var(--surface2);border:1px solid var(--border2);color:var(--text);font-family:'DM Mono',monospace;font-size:12px;outline:none;transition:border-color 0.2s;}
@@ -428,7 +430,7 @@ input[type=checkbox]{width:14px;height:14px;accent-color:var(--accent);cursor:po
 <!-- ADD OPPORTUNITY MODAL -->
 <div class="modal-overlay" id="opp-modal">
   <div class="modal wide">
-    <div class="modal-title">Add Opportunity</div>
+    <div class="modal-title" id="opp-modal-title">Add Opportunity</div>
     <div class="modal-sub" id="opp-modal-sub"></div>
     <!-- Admin can pick territory -->
     <div class="modal-field" id="admin-territory-field" style="display:none">
@@ -457,17 +459,19 @@ input[type=checkbox]{width:14px;height:14px;accent-color:var(--accent);cursor:po
         </select>
       </div>
       <div class="modal-field"><label>Product</label>
-        <select id="f-product">
+        <select id="f-product" onchange="handleProductSelect(this)">
           <option value="">-- Select product --</option>
           <option>AI</option><option>Ceia</option><option>Explosive Detector</option><option>Spare Parts</option>
           <option>V-50</option><option>V-50S</option><option>V-60</option><option>V-60C</option>
           <option>V-60D</option><option>V-60S</option><option>V-6D</option><option>V-70</option>
           <option>V-70D</option><option>V-100</option><option>V-100D</option><option>V-100DT</option>
           <option>V-100T</option>
+          <option value="__new__">+ Add new product...</option>
         </select>
+        <input id="f-product-new" type="text" placeholder="Type new product name..." style="display:none;margin-top:6px;padding:10px 12px;background:var(--surface2);border:1px solid var(--accent);color:var(--text);font-family:'DM Mono',monospace;font-size:13px;outline:none;width:100%">
       </div>
       <div class="modal-field"><label># Units</label>
-        <select id="f-units">
+        <select id="f-units" onchange="calcAmount()">
           <option value="">-- Select units --</option>
           <option>1</option><option>2</option><option>3</option><option>4</option><option>5</option>
           <option>6</option><option>7</option><option>8</option><option>9</option><option>10</option>
@@ -478,9 +482,28 @@ input[type=checkbox]{width:14px;height:14px;accent-color:var(--accent);cursor:po
           <option>61</option><option>78</option><option>84</option><option>100</option><option>140</option><option>144</option>
         </select>
       </div>
-      <div class="modal-field"><label>Timeframe</label><input id="f-timeframe" type="text"></div>
-      <div class="modal-field"><label>Unit Price (USD)</label><input id="f-unitprice" type="number" min="0"></div>
-      <div class="modal-field"><label>Amount USD</label><input id="f-amount" type="number" min="0"></div>
+      <div class="modal-field"><label>Timeframe</label>
+        <select id="f-timeframe">
+          <option value="">-- Select timeframe --</option>
+          <option>Immediate</option>
+          <option>1 Month</option>
+          <option>2 Months</option>
+          <option>3 Months</option>
+          <option>6 Months</option>
+          <option>Q1-2025</option>
+          <option>Q2-2025</option>
+          <option>Q3-2025</option>
+          <option>Q4-2025</option>
+          <option>Q1-2026</option>
+          <option>Q2-2026</option>
+          <option>Q3-2026</option>
+          <option>Q4-2026</option>
+          <option>Q1-2027</option>
+          <option>Q2-2027</option>
+        </select>
+      </div>
+      <div class="modal-field"><label>Unit Price (USD)</label><input id="f-unitprice" type="number" min="0" oninput="calcAmount()"></div>
+      <div class="modal-field"><label>Amount USD <span style="font-size:9px;color:var(--text3)">(auto)</span></label><input id="f-amount" type="number" min="0" style="background:var(--surface);opacity:0.8" readonly></div>
       <div class="modal-field"><label>Status</label>
         <select id="f-status">
           <option>In discussion</option><option>Identified Decision makers</option><option>Proposal</option>
@@ -500,8 +523,10 @@ input[type=checkbox]{width:14px;height:14px;accent-color:var(--accent);cursor:po
       <div class="modal-field full"><label>Notes</label><textarea id="f-notes" rows="3"></textarea></div>
     </div>
     <div class="modal-actions">
+      <input type="hidden" id="f-edit-idx" value="">
+      <input type="hidden" id="f-edit-region" value="">
       <button class="btn btn-outline" onclick="closeModal('opp-modal')">Cancel</button>
-      <button class="btn btn-primary" onclick="saveRow()">Save Opportunity</button>
+      <button class="btn btn-primary" onclick="saveRow()">Save</button>
     </div>
   </div>
 </div>
@@ -1032,7 +1057,7 @@ function renderPipeline(){
         '<td class="amount'+(wf>0?' amount-pos':'')+'">$'+fmtN(wf)+'</td>'+
         '<td style="color:var(--text2)">'+esc(row['Shipping Quarter'])+'</td>'+
         '<td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text3)" title="'+esc(row.Notes)+'">'+esc(row.Notes)+'</td>'+
-        '<td><button class="btn-xsm" onclick="deleteRow(\''+region+'\','+gi+')">✕</button></td>'+
+        '<td><button class="btn-edit" onclick="editRow(\''+region+'\','+gi+')">✎</button><button class="btn-xsm" onclick="deleteRow(\''+region+'\','+gi+')">✕</button></td>'+
       '</tr>';
     }).join('');
   }
@@ -1072,35 +1097,164 @@ function deleteRow(region,idx){
 }
 function changePage(dir){currentPage+=dir;renderPipeline();}
 
+function calcAmount(){
+  var units = Number(document.getElementById('f-units').value)||0;
+  var price = Number(document.getElementById('f-unitprice').value)||0;
+  if(units > 0 && price > 0){
+    document.getElementById('f-amount').value = units * price;
+  }
+}
+
+function handleProductSelect(sel){
+  var newInput = document.getElementById('f-product-new');
+  if(sel.value === '__new__'){
+    newInput.style.display = 'block';
+    newInput.focus();
+  } else {
+    newInput.style.display = 'none';
+    newInput.value = '';
+  }
+}
+
+function getProductValue(){
+  var sel = document.getElementById('f-product');
+  if(sel.value === '__new__'){
+    return document.getElementById('f-product-new').value.trim();
+  }
+  return sel.value;
+}
+
 function openAddModal(){
   var atf=document.getElementById('admin-territory-field');
   if(isAdmin){atf.style.display='block';document.getElementById('f-territory').value=currentRegion||'North America';
     document.getElementById('opp-modal-sub').textContent='Select a territory and fill in the opportunity details.';}
   else{atf.style.display='none';document.getElementById('opp-modal-sub').textContent='Adding to: '+territoryNames[currentRegion];}
-  ['f-dist','f-country','f-product','f-units','f-timeframe','f-unitprice','f-amount','f-forecast','f-shipqtr','f-notes'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  ['f-dist','f-unitprice','f-amount','f-forecast','f-notes'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  document.getElementById('f-country').value='';
+  document.getElementById('f-product').value='';
+  document.getElementById('f-product-new').style.display='none';
+  document.getElementById('f-product-new').value='';
+  document.getElementById('f-units').value='';
+  document.getElementById('f-timeframe').value='';
   document.getElementById('f-status').value='Proposal';
+  document.getElementById('f-shipqtr').value='';
+  document.getElementById('f-edit-idx').value='';
+  document.getElementById('f-edit-region').value='';
+  document.getElementById('opp-modal-title').textContent='Add Opportunity';
   document.getElementById('opp-modal').classList.add('open');
 }
+
+function editRow(region, idx){
+  var filtered = getFilteredRows();
+  var row = filtered[idx];
+  if(!row) return;
+  // Pre-fill modal with row data
+  document.getElementById('opp-modal-title').textContent = 'Edit Opportunity';
+  document.getElementById('opp-modal-sub').textContent = 'Editing: ' + esc(row.Distributor);
+  var atf = document.getElementById('admin-territory-field');
+  atf.style.display = isAdmin ? 'block' : 'none';
+  if(isAdmin) document.getElementById('f-territory').value = region;
+  document.getElementById('f-dist').value = row.Distributor||'';
+  // Set country dropdown
+  var cSel = document.getElementById('f-country');
+  var cOpts = Array.from(cSel.options).map(function(o){return o.value;});
+  cSel.value = cOpts.indexOf(row.Country||'') >= 0 ? (row.Country||'') : '';
+  // Set product dropdown
+  var pSel = document.getElementById('f-product');
+  var pOpts = Array.from(pSel.options).map(function(o){return o.value;});
+  if(pOpts.indexOf(row.Product||'') >= 0){
+    pSel.value = row.Product||'';
+    document.getElementById('f-product-new').style.display='none';
+  } else {
+    pSel.value = '__new__';
+    document.getElementById('f-product-new').style.display='block';
+    document.getElementById('f-product-new').value = row.Product||'';
+  }
+  // Set units
+  var uSel = document.getElementById('f-units');
+  var uOpts = Array.from(uSel.options).map(function(o){return o.value;});
+  uSel.value = uOpts.indexOf(String(row['# Units']||'')) >= 0 ? String(row['# Units']||'') : '';
+  // Set timeframe
+  var tfSel = document.getElementById('f-timeframe');
+  var tfOpts = Array.from(tfSel.options).map(function(o){return o.value;});
+  tfSel.value = tfOpts.indexOf(row.Timeframe||'') >= 0 ? (row.Timeframe||'') : '';
+  document.getElementById('f-unitprice').value = row['Unit price']||row['Unit Price']||'';
+  document.getElementById('f-amount').value = row['Amount USD']||'';
+  document.getElementById('f-status').value = row.Probability||'Proposal';
+  document.getElementById('f-forecast').value = row['Forecast  Close']||row['Forecast Close']||'';
+  // Set shipping quarter
+  var sqSel = document.getElementById('f-shipqtr');
+  var sqOpts = Array.from(sqSel.options).map(function(o){return o.value;});
+  sqSel.value = sqOpts.indexOf(row['Shipping Quarter']||'') >= 0 ? (row['Shipping Quarter']||'') : '';
+  document.getElementById('f-notes').value = row.Notes||'';
+  // Store edit context
+  document.getElementById('f-edit-idx').value = idx;
+  document.getElementById('f-edit-region').value = region;
+  document.getElementById('opp-modal').classList.add('open');
+}
+
 function saveRow(){
   var dist=document.getElementById('f-dist').value.trim();
   if(!dist){alert('Customer / Distributor is required.');return;}
+  var product = getProductValue();
+  if(!product){alert('Please select or enter a product.');return;}
   var targetRegion=isAdmin?document.getElementById('f-territory').value:currentRegion;
   if(!targetRegion){alert('Please select a territory.');return;}
   var prob=document.getElementById('f-status').value;
+  var units=Number(document.getElementById('f-units').value)||0;
+  var unitPrice=Number(document.getElementById('f-unitprice').value)||0;
   var amt=Number(document.getElementById('f-amount').value)||0;
-  pipelineData[targetRegion].push({
-    'Distributor':dist,'Country':document.getElementById('f-country').value,
-    'Product':document.getElementById('f-product').value,
-    '# Units':Number(document.getElementById('f-units').value)||0,
+  // Auto-calc if amount is 0 but we have units and price
+  if(amt === 0 && units > 0 && unitPrice > 0) amt = units * unitPrice;
+  var newRow = {
+    'Distributor':dist,
+    'Country':document.getElementById('f-country').value,
+    'Product':product,
+    '# Units':units,
     'Timeframe':document.getElementById('f-timeframe').value,
-    'Unit price':Number(document.getElementById('f-unitprice').value)||0,
-    'Amount USD':amt,'Probability':prob,'Prob %':STATUS_PROB[prob]||0,
+    'Unit price':unitPrice,
+    'Amount USD':amt,
+    'Probability':prob,
+    'Prob %':STATUS_PROB[prob]||0,
     'Forecast  Close':document.getElementById('f-forecast').value,
     'Weighted  Forecast':amt*(STATUS_PROB[prob]||0),
     'Shipping Quarter':document.getElementById('f-shipqtr').value,
     'Notes':document.getElementById('f-notes').value
-  });
-  logActivity('added',targetRegion,dist+' · '+document.getElementById('f-product').value,'$'+amt.toLocaleString('en-US')+' · '+prob);
+  };
+  var editIdx = document.getElementById('f-edit-idx').value;
+  var editRegion = document.getElementById('f-edit-region').value;
+  if(editIdx !== '' && editRegion){
+    // EDIT MODE — find and replace in source array
+    var filtered = getFilteredRows();
+    var oldRow = filtered[Number(editIdx)];
+    if(oldRow){
+      var arr = pipelineData[editRegion];
+      var ri = arr.findIndex(function(r){
+        return r.Distributor===oldRow.Distributor&&r['Amount USD']===oldRow['Amount USD']&&r.Product===oldRow.Product&&r.Country===oldRow.Country;
+      });
+      if(ri >= 0){
+        // If territory changed (admin only), remove from old and add to new
+        if(targetRegion !== editRegion){
+          arr.splice(ri, 1);
+          pipelineData[targetRegion].push(newRow);
+        } else {
+          pipelineData[editRegion][ri] = newRow;
+        }
+      }
+    }
+    logActivity('status', targetRegion, dist+' · '+product, 'Opportunity edited');
+  } else {
+    // ADD MODE
+    pipelineData[targetRegion].push(newRow);
+    logActivity('added', targetRegion, dist+' · '+product, '$'+amt.toLocaleString('en-US')+' · '+prob);
+  }
+  // If new product was added, inject it into the dropdown for future use
+  if(document.getElementById('f-product').value === '__new__' && product){
+    var sel = document.getElementById('f-product');
+    var newOpt = document.createElement('option');
+    newOpt.value = product; newOpt.textContent = product;
+    sel.insertBefore(newOpt, sel.options[sel.options.length-1]);
+  }
   closeModal('opp-modal');saveToStorage();showSaved();
   if(isAdmin&&targetRegion!==currentRegion){adminSwitchRegion(targetRegion);}else{renderPipeline();}
 }
