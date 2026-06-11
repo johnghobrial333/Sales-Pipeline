@@ -438,6 +438,9 @@ body.light-theme .import-modal .modal,body.light-theme .user-modal .modal{backgr
             <label><input type="checkbox" value="Proposal" onchange="applyFilters()"> Proposal</label>
             <label><input type="checkbox" value="In Negotiation" onchange="applyFilters()"> In Negotiation</label>
             <label><input type="checkbox" value="Purchasing" onchange="applyFilters()"> Purchasing</label>
+            <label><input type="checkbox" value="Received PO - Pending Shipping" onchange="applyFilters()"> Received PO - Pending Shipping</label>
+            <label><input type="checkbox" value="Received PO - Shipped" onchange="applyFilters()"> Received PO - Shipped</label>
+            <label><input type="checkbox" value="Lost" onchange="applyFilters()"> Lost</label>
           </div>
         </div>
         <div class="multi-filter-wrap">
@@ -456,6 +459,9 @@ body.light-theme .import-modal .modal,body.light-theme .user-modal .modal{backgr
           <option>Proposal</option>
           <option>In Negotiation</option>
           <option>Purchasing</option>
+          <option>Received PO - Pending Shipping</option>
+          <option>Received PO - Shipped</option>
+          <option>Lost</option>
         </select>
         <div class="filter-sep"></div>
         <button class="btn-search" onclick="applyFilters()">⌕ Search</button>
@@ -564,6 +570,9 @@ body.light-theme .import-modal .modal,body.light-theme .user-modal .modal{backgr
                   <label><input type="checkbox" value="Proposal" onchange="updateFilterBtn('rpt-status')"> Proposal</label>
                   <label><input type="checkbox" value="In Negotiation" onchange="updateFilterBtn('rpt-status')"> In Negotiation</label>
                   <label><input type="checkbox" value="Purchasing" onchange="updateFilterBtn('rpt-status')"> Purchasing</label>
+                  <label><input type="checkbox" value="Received PO - Pending Shipping" onchange="updateFilterBtn('rpt-status')"> Received PO - Pending Shipping</label>
+                  <label><input type="checkbox" value="Received PO - Shipped" onchange="updateFilterBtn('rpt-status')"> Received PO - Shipped</label>
+                  <label><input type="checkbox" value="Lost" onchange="updateFilterBtn('rpt-status')"> Lost</label>
                 </div>
               </div>
             </div>
