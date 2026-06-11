@@ -2157,12 +2157,17 @@ function updateFilterBtn(name){
   else if(vals.length===1){btn.textContent=vals[0].length>16?vals[0].slice(0,14)+'…':vals[0];btn.classList.add('active');}
   else{btn.textContent=(labels[name]||name.replace('rpt-',''))+': '+vals.length+' ▼';btn.classList.add('active');}
 }
+var _lastFilterRegion = null;
 function populateFilterDropdown(name,values){
-  var drop=document.getElementById('mfd-'+name);
-  if(!drop||drop.children.length>0) return;
-  drop.innerHTML=values.sort().map(function(v){
-    return '<label><input type="checkbox" value="'+v.replace(/"/g,'&quot;')+'" onchange="applyFilters()"> '+v+'</label>';
-  }).join('');
+  try{
+    var drop=document.getElementById('mfd-'+name);
+    if(!drop) return;
+    // Repopulate if region changed or dropdown is empty
+    if(drop.children.length>0 && _lastFilterRegion===currentRegion) return;
+    drop.innerHTML=values.sort().map(function(v){
+      return '<label><input type="checkbox" value="'+v.replace(/"/g,'&quot;')+'" onchange="applyFilters()"> '+v+'</label>';
+    }).join('');
+  }catch(e){}
 }
 function clearAllFilters(){
   var c=document.getElementById('filter-customer');if(c)c.value='';
@@ -2352,29 +2357,33 @@ function getCurrentRows(){
   return (pipelineData[currentRegion]||[]).map(function(row){return Object.assign({},row,{_region:currentRegion});});
 }
 function getFilteredRows(){
-  var rows=getCurrentRows();
-  var fC=((document.getElementById('filter-customer')||{}).value||'').toLowerCase();
-  if(fC) rows=rows.filter(function(r){return(r.Distributor||'').toLowerCase().indexOf(fC)>=0;});
-  // Populate dynamic dropdowns on first render
-  if(typeof populateFilterDropdown==='function'){
-    var products={},countries={};
-    (pipelineData[currentRegion]||[]).forEach(function(r){if(r.Product)products[r.Product]=true;if(r.Country)countries[r.Country]=true;});
-    populateFilterDropdown('product',Object.keys(products));
-    populateFilterDropdown('country',Object.keys(countries));
+  try{
+    var rows=getCurrentRows();
+    // Customer text search
+    var fC=((document.getElementById('filter-customer')||{}).value||'').toLowerCase();
+    if(fC) rows=rows.filter(function(r){return(r.Distributor||'').toLowerCase().indexOf(fC)>=0;});
+    // Multi-select filters
+    var ss=getMultiFilterValues('status');
+    var sp=getMultiFilterValues('product');
+    var sc=getMultiFilterValues('country');
+    if(ss.length) rows=rows.filter(function(r){return ss.indexOf(r.Probability)>=0;});
+    if(sp.length) rows=rows.filter(function(r){return sp.indexOf(r.Product)>=0;});
+    if(sc.length) rows=rows.filter(function(r){return sc.indexOf(r.Country)>=0;});
+    // Update button labels
+    if(typeof updateFilterBtn==='function'){
+      updateFilterBtn('status');updateFilterBtn('product');updateFilterBtn('country');
+    }
+    // Sort
+    if(sortCol){rows.sort(function(a,b){
+      var av=a[sortCol]||'',bv=b[sortCol]||'';
+      if(av!==''&&bv!==''&&!isNaN(Number(av))&&!isNaN(Number(bv)))return sortDir*(Number(av)-Number(bv));
+      return sortDir*String(av).localeCompare(String(bv));
+    });}
+    return rows;
+  }catch(e){
+    console.error('[VITA] getFilteredRows error:',e);
+    return getCurrentRows();
   }
-  var ss=getMultiFilterValues('status');
-  var sp=getMultiFilterValues('product');
-  var sc=getMultiFilterValues('country');
-  if(ss.length) rows=rows.filter(function(r){return ss.indexOf(r.Probability)>=0;});
-  if(sp.length) rows=rows.filter(function(r){return sp.indexOf(r.Product)>=0;});
-  if(sc.length) rows=rows.filter(function(r){return sc.indexOf(r.Country)>=0;});
-  ['status','product','country'].forEach(function(n){if(typeof updateFilterBtn==='function')updateFilterBtn(n);});
-  if(sortCol){rows.sort(function(a,b){
-    var av=a[sortCol]||'',bv=b[sortCol]||'';
-    if(av!==''&&bv!==''&&!isNaN(Number(av))&&!isNaN(Number(bv)))return sortDir*(Number(av)-Number(bv));
-    return sortDir*String(av).localeCompare(String(bv));
-  });}
-  return rows;
 }
 
 function setPageSize(n){
@@ -2436,6 +2445,19 @@ function renderStats(){
 
 function renderPipeline(){
   if(!currentRegion)return;
+  // Populate filter dropdowns for this territory (safe to call here)
+  try{
+    if(typeof populateFilterDropdown==='function'){
+      var products={},countries={};
+      (pipelineData[currentRegion]||[]).forEach(function(r){
+        if(r.Product)products[r.Product]=true;
+        if(r.Country)countries[r.Country]=true;
+      });
+      populateFilterDropdown('product',Object.keys(products));
+      populateFilterDropdown('country',Object.keys(countries));
+      _lastFilterRegion=currentRegion;
+    }
+  }catch(e){}
   renderStats();
   var filtered=getFilteredRows();
   var total=filtered.length;
