@@ -1486,75 +1486,125 @@ function showCloudStatus(msg, type){
 
 // Load data from JSONBin
 function loadFromCloud(callback){
-  if(!isCloudConfigured()){ if(callback) callback(false); return; }
+  GITHUB_TOKEN = localStorage.getItem('vitaGithubToken') || '';
+  if(!GITHUB_TOKEN){
+    console.warn('[VITA] loadFromCloud - no GitHub token set');
+    showCloudStatus('No GitHub token - data saved locally','warn');
+    // Load from localStorage as fallback
+    _loadFromLocalStorage();
+    if(callback) callback(false);
+    return;
+  }
   showCloudStatus('Syncing...','syncing');
-  fetch('https://api.github.com/repos/'+GITHUB_REPO+'/contents/'+GITHUB_FILE+'?ref='+GITHUB_BRANCH,{
+
+  fetch('https://api.github.com/repos/'+GITHUB_REPO+'/contents/'+GITHUB_FILE+'?ref='+GITHUB_BRANCH+'&t='+Date.now(),{
     headers:{'Authorization':'token '+GITHUB_TOKEN,'Accept':'application/vnd.github.v3+json','Cache-Control':'no-cache'}
   })
   .then(function(r){
-    if(r.status===404){ _githubSha=null; return null; }
+    if(r.status===404){console.log('[VITA] vita_data.json not found - will create on first save');_githubSha=null;return null;}
+    if(r.status===401||r.status===403){throw new Error('GitHub auth failed ('+r.status+') - check token');}
     if(!r.ok) throw new Error('HTTP '+r.status);
     return r.json();
   })
   .then(function(d){
-    if(isSaving||_saveQueued||_savePending){ if(callback) callback(true); return; }
+    if(isSaving||_saveQueued||_savePending){if(callback)callback(true);return;}
+
     var record=null;
     if(d&&d.content){
       _githubSha=d.sha;
-      try{ record=JSON.parse(decodeURIComponent(escape(atob(d.content.replace(/\n/g,''))))); }
-      catch(e){ console.error('[VITA] decode failed',e); }
+      try{record=JSON.parse(decodeURIComponent(escape(atob(d.content.replace(/\n/g,'')))));}
+      catch(e){console.error('[VITA] decode failed:',e);}
     }
+
     var REGIONS=['North America','South America','EMEA','ASPC'];
+
     if(!record){
+      // File empty or missing - push INITIAL_DATA
+      console.log('[VITA] No data in GitHub - pushing INITIAL_DATA');
       pipelineData=JSON.parse(JSON.stringify(INITIAL_DATA));
       saveToStorage();
-      showCloudStatus('Synced','saved'); updateSyncTime(); lastSyncTime=Date.now();
-      if(callback) callback(true); return;
+      showCloudStatus('Synced','saved');updateSyncTime();lastSyncTime=Date.now();
+      if(callback)callback(true);return;
     }
+
     var src=(record._v===2&&record.data)?record.data:record;
-    var cloudTotal=0; REGIONS.forEach(function(r){if(Array.isArray(src[r]))cloudTotal+=src[r].length;});
-    var localTotal=0; REGIONS.forEach(function(r){if(Array.isArray(pipelineData[r]))localTotal+=pipelineData[r].length;});
-    if(cloudTotal===0&&localTotal>0){ saveToStorage(); showCloudStatus('Synced','saved'); updateSyncTime(); lastSyncTime=Date.now(); if(callback) callback(true); return; }
+    var cloudTotal=0;
+    REGIONS.forEach(function(r){if(Array.isArray(src[r]))cloudTotal+=src[r].length;});
+    console.log('[VITA] Cloud has',cloudTotal,'rows');
+
+    if(cloudTotal===0){
+      var localTotal=0;
+      REGIONS.forEach(function(r){if(Array.isArray(pipelineData[r]))localTotal+=pipelineData[r].length;});
+      if(localTotal>0){
+        console.log('[VITA] Cloud empty, pushing local data ('+localTotal+' rows)');
+        saveToStorage();
+        showCloudStatus('Synced','saved');updateSyncTime();lastSyncTime=Date.now();
+        if(callback)callback(true);return;
+      }
+    }
+
+    // Use cloud data
     var fixed={'North America':[],'South America':[],'EMEA':[],'ASPC':[]};
     for(var k in src){
-      if(!Array.isArray(src[k])) continue;
-      if(REGIONS.indexOf(k)>=0){ fixed[k]=fixed[k].concat(src[k]); }
-      else{ for(var vi=0;vi<REGIONS.length;vi++){if(k.toLowerCase().indexOf(REGIONS[vi].toLowerCase())>=0){fixed[REGIONS[vi]]=fixed[REGIONS[vi]].concat(src[k]);break;}}}
+      if(!Array.isArray(src[k]))continue;
+      if(REGIONS.indexOf(k)>=0){fixed[k]=fixed[k].concat(src[k]);}
+      else{for(var vi=0;vi<REGIONS.length;vi++){
+        if(k.toLowerCase().indexOf(REGIONS[vi].toLowerCase())>=0){fixed[REGIONS[vi]]=fixed[REGIONS[vi]].concat(src[k]);break;}
+      }}
     }
     pipelineData=fixed;
+    console.log('[VITA] Loaded from GitHub: NA='+fixed['North America'].length+' SA='+fixed['South America'].length+' EMEA='+fixed['EMEA'].length+' ASPC='+fixed['ASPC'].length);
+
+    // Sync users
     if(src._users&&Array.isArray(src._users)&&src._users.length){
       var cIds={};src._users.forEach(function(u){cIds[u.id]=true;});
       USERS=src._users.concat(USERS.filter(function(u){return !cIds[u.id];}));
       try{localStorage.setItem(USERS_KEY,JSON.stringify(USERS));}catch(e){}
     }
+
+    // Merge activity log
     var cloudLog=(record._v===2&&Array.isArray(record.log))?record.log:[];
     if(cloudLog.length){
       var combined=activityLog.concat(cloudLog),seen={};
       activityLog=combined.filter(function(e){if(!e.id||seen[e.id])return false;seen[e.id]=true;return true;}).sort(function(a,b){return b.ts-a.ts;}).slice(0,500);
-      saveLog(); updateLogBadge();
+      saveLog();updateLogBadge();
     }
-    saveLocal(); lastSyncTime=Date.now();
-    showCloudStatus('Synced','saved'); updateSyncTime();
-    if(callback) callback(true);
+
+    saveLocal();
+    lastSyncTime=Date.now();
+    showCloudStatus('Synced','saved');updateSyncTime();
+    if(callback)callback(true);
   })
   .catch(function(err){
-    console.error('[VITA] loadFromCloud failed:',err);
-    var _tokenMissing = !localStorage.getItem('vitaGithubToken');
-    showCloudStatus(_tokenMissing ? 'No GitHub token - using local data' : 'Sync failed - using local data', _tokenMissing ? 'warn' : 'error');
-    var loaded=false;
-    try{
-      var _lc=localStorage.getItem('vitaPipelineData_v1');
-      if(_lc){
-        var _p=JSON.parse(_lc),_src=(_p&&_p.data)?_p.data:_p;
-        var _R=['North America','South America','EMEA','ASPC'],_f={'North America':[],'South America':[],'EMEA':[],'ASPC':[]},_total=0;
-        for(var _k in _src){if(!Array.isArray(_src[_k]))continue;if(_R.indexOf(_k)>=0){_f[_k]=_f[_k].concat(_src[_k]);_total+=_src[_k].length;}else{for(var _i=0;_i<_R.length;_i++){if(_k.toLowerCase().indexOf(_R[_i].toLowerCase())>=0){_f[_R[_i]]=_f[_R[_i]].concat(_src[_k]);_total+=_src[_k].length;break;}}}}
-        if(_total>0){pipelineData=_f;loaded=true;}
-      }
-    }catch(e){}
-    if(!loaded&&typeof INITIAL_DATA!=='undefined'){pipelineData=JSON.parse(JSON.stringify(INITIAL_DATA));showCloudStatus('Offline - showing cached data','warn');}
-    if(callback) callback(false);
+    var errMsg=err&&err.message?err.message:'Failed to fetch';
+    console.error('[VITA] loadFromCloud failed:',errMsg);
+    var noToken=!localStorage.getItem('vitaGithubToken');
+    showCloudStatus(noToken?'No GitHub token - using local data':'Sync failed: '+errMsg.slice(0,30),'error');
+    _loadFromLocalStorage();
+    if(callback)callback(false);
   });
 }
+
+function _loadFromLocalStorage(){
+  try{
+    var _lc=localStorage.getItem('vitaPipelineData_v1');
+    if(_lc){
+      var _p=JSON.parse(_lc),_src=(_p&&_p.data)?_p.data:_p;
+      var _R=['North America','South America','EMEA','ASPC'],_f={'North America':[],'South America':[],'EMEA':[],'ASPC':[]},_t=0;
+      for(var _k in _src){
+        if(!Array.isArray(_src[_k]))continue;
+        if(_R.indexOf(_k)>=0){_f[_k]=_f[_k].concat(_src[_k]);_t+=_src[_k].length;}
+        else{for(var _i=0;_i<_R.length;_i++){if(_k.toLowerCase().indexOf(_R[_i].toLowerCase())>=0){_f[_R[_i]]=_f[_R[_i]].concat(_src[_k]);_t+=_src[_k].length;break;}}}
+      }
+      if(_t>0){pipelineData=_f;console.log('[VITA] Loaded from localStorage:',_t,'rows');return;}
+    }
+  }catch(e){}
+  if(typeof INITIAL_DATA!=='undefined'){
+    pipelineData=JSON.parse(JSON.stringify(INITIAL_DATA));
+    console.log('[VITA] Using INITIAL_DATA fallback');
+  }
+}
+
 
 function _mergeCloudLog(record){
   var cl=(record._v===2&&Array.isArray(record.log))?record.log:[];
@@ -1572,7 +1622,12 @@ var _maxRetries = 4;
 var _retryDelays = [3000, 8000, 20000, 60000]; // 3s, 8s, 20s, 1min
 
 function saveToCloud(){
-  if(!isCloudConfigured()){ saveLocal(); return; }
+  if(!isCloudConfigured()){
+    saveLocal();
+    console.warn('[VITA] saveToCloud skipped - no GitHub token. Set token via Connect GitHub button.');
+    showCloudStatus('No GitHub token - saved locally only','warn');
+    return;
+  }
   if(isSaving){ _saveQueued=true; return; }
   if(typeof navigator!=='undefined'&&!navigator.onLine){
     saveLocal();
@@ -1581,49 +1636,93 @@ function saveToCloud(){
   }
   isSaving=true; _saveQueued=false; _savePending=true;
   showCloudStatus('Saving...','syncing');
+
   var REGIONS=['North America','South America','EMEA','ASPC'];
   var myTerritories=isAdmin?REGIONS:(userTerritories||REGIONS);
-  fetch('https://api.github.com/repos/'+GITHUB_REPO+'/contents/'+GITHUB_FILE+'?ref='+GITHUB_BRANCH,{
+
+  // Always fetch fresh SHA before writing (prevents 409 conflicts)
+  fetch('https://api.github.com/repos/'+GITHUB_REPO+'/contents/'+GITHUB_FILE+'?ref='+GITHUB_BRANCH+'&t='+Date.now(),{
     headers:{'Authorization':'token '+GITHUB_TOKEN,'Accept':'application/vnd.github.v3+json','Cache-Control':'no-cache'}
   })
-  .then(function(r){if(r.status===404)return null;if(!r.ok)throw new Error('HTTP '+r.status);return r.json();})
+  .then(function(r){
+    if(r.status===404) return null;
+    if(r.status===401||r.status===403){throw new Error('Auth failed ('+r.status+') - check GitHub token');}
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    return r.json();
+  })
   .then(function(d){
     var cloudData={'North America':[],'South America':[],'EMEA':[],'ASPC':[]},sha=null;
-    if(d&&d.content){sha=d.sha;_githubSha=sha;try{var rec=JSON.parse(decodeURIComponent(escape(atob(d.content.replace(/\n/g,'')))));var csrc=(rec._v===2&&rec.data)?rec.data:rec;REGIONS.forEach(function(r){if(Array.isArray(csrc[r]))cloudData[r]=csrc[r];});}catch(e){}}
+    if(d&&d.content){
+      sha=d.sha; _githubSha=sha;
+      try{
+        var rec=JSON.parse(decodeURIComponent(escape(atob(d.content.replace(/\n/g,'')))));
+        var csrc=(rec._v===2&&rec.data)?rec.data:rec;
+        REGIONS.forEach(function(r){if(Array.isArray(csrc[r]))cloudData[r]=csrc[r];});
+      }catch(e){console.warn('[VITA] Could not decode existing data:',e);}
+    }
+    // Replace only my territories
     myTerritories.forEach(function(r){if(REGIONS.indexOf(r)>=0)cloudData[r]=pipelineData[r]||[];});
-    REGIONS.forEach(function(r){if(myTerritories.indexOf(r)<0&&Array.isArray(cloudData[r])&&cloudData[r].length>0)pipelineData[r]=cloudData[r];});
+    // Update local copy of other territories
+    REGIONS.forEach(function(r){
+      if(myTerritories.indexOf(r)<0&&Array.isArray(cloudData[r])&&cloudData[r].length>0)
+        pipelineData[r]=cloudData[r];
+    });
     cloudData._users=USERS;
+
     var payload={_v:2,data:cloudData,log:activityLog.slice(0,200)};
-    var encoded=btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
-    var body={message:'Update VITA pipeline - '+new Date().toISOString().slice(0,16),content:encoded,branch:GITHUB_BRANCH};
-    if(sha)body.sha=sha;
+    var encoded;
+    try{ encoded=btoa(unescape(encodeURIComponent(JSON.stringify(payload)))); }
+    catch(e){ isSaving=false;_savePending=false;console.error('[VITA] encode failed:',e);return; }
+
+    var body={message:'VITA update '+new Date().toISOString().slice(0,16),content:encoded,branch:GITHUB_BRANCH};
+    if(sha) body.sha=sha;
+
     return fetch('https://api.github.com/repos/'+GITHUB_REPO+'/contents/'+GITHUB_FILE,{
       method:'PUT',
       headers:{'Authorization':'token '+GITHUB_TOKEN,'Accept':'application/vnd.github.v3+json','Content-Type':'application/json'},
       body:JSON.stringify(body)
     });
   })
-  .then(function(r){if(!r)throw new Error('No response');if(!r.ok)return r.json().then(function(e){throw new Error(e.message||'HTTP '+r.status);});return r.json();})
+  .then(function(r){
+    if(!r) throw new Error('No response from GitHub');
+    if(r.status===409){
+      // SHA conflict - retry once with fresh fetch
+      console.warn('[VITA] SHA conflict (409) - retrying...');
+      isSaving=false; _githubSha=null;
+      setTimeout(saveToCloud, 1000);
+      return;
+    }
+    if(r.status===401||r.status===403){
+      return r.json().then(function(e){throw new Error('Auth error: '+e.message);});
+    }
+    if(!r.ok) return r.json().then(function(e){throw new Error(e.message||'HTTP '+r.status);});
+    return r.json();
+  })
   .then(function(d){
-    if(d&&d.content)_githubSha=d.content.sha;
-    isSaving=false;_savePending=false;_retryCount=0;
-    lastSyncTime=Date.now();saveLocal();
-    showCloudStatus('Saved to cloud','saved');updateSyncTime();
+    if(!d) return; // 409 retry case
+    if(d&&d.content) _githubSha=d.content.sha;
+    isSaving=false; _savePending=false; _retryCount=0;
+    lastSyncTime=Date.now(); saveLocal();
+    showCloudStatus('Saved to cloud','saved'); updateSyncTime();
+    console.log('[VITA] Saved to GitHub OK');
     if(_saveQueued){_saveQueued=false;saveToCloud();}
   })
   .catch(function(err){
-    isSaving=false;saveLocal();
-    var errMsg=err&&err.message?err.message:'error';
+    isSaving=false; _savePending=false; saveLocal();
+    var errMsg=err&&err.message?err.message:'network error';
+    console.error('[VITA] saveToCloud failed:',errMsg);
     if(_retryCount<_maxRetries){
       var delay=_retryDelays[_retryCount];_retryCount++;
-      showCloudStatus('Retry '+_retryCount+'/'+_maxRetries+' in '+Math.round(delay/1000)+'s','warn');
+      showCloudStatus('Retry '+_retryCount+'/'+_maxRetries+' ('+errMsg.slice(0,30)+')','warn');
       setTimeout(function(){saveToCloud();},delay);
     } else {
-      _retryCount=0;_savePending=false;
-      showCloudStatus('Sync failed - saved locally','error');
+      _retryCount=0;
+      showCloudStatus('Sync failed: '+errMsg.slice(0,40),'error');
+      console.error('[VITA] All retries failed:',errMsg);
     }
   });
 }
+
 
 // Fallback local save
 function saveLocal(){
