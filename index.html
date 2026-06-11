@@ -349,14 +349,16 @@ body.light-theme .import-modal .modal,body.light-theme .user-modal .modal{backgr
     <label class="login-label">Password</label>
     <input class="login-input" id="login-pass" type="password" placeholder="Enter your password">
     <button class="login-btn" onclick="doLogin()">Sign In</button>
-    <div style="text-align:center;margin-top:8px" id="github-token-setup" style="display:none">
-      <button onclick="promptGithubToken()" style="background:none;border:1px solid var(--accent2);color:var(--accent2);padding:6px 14px;border-radius:6px;cursor:pointer;font-size:11px;font-family:inherit">
+    <div style="text-align:center;margin-top:8px" id="github-token-setup">
+      <div id="token-status-msg" style="font-size:10px;color:var(--text3);margin-bottom:6px"></div>
+      <button onclick="promptGithubToken()" id="connect-github-btn" style="background:none;border:1px solid var(--accent2);color:var(--accent2);padding:6px 14px;border-radius:6px;cursor:pointer;font-size:11px;font-family:inherit">
         &#128279; Connect GitHub Storage
       </button>
     </div>
     <div style="text-align:center;margin-top:4px"><button onclick="clearCacheAndReload()" style="background:none;border:none;color:var(--text3);font-size:10px;cursor:pointer;text-decoration:underline;font-family:inherit">&#8635; Seeing old data? Click here to clear cache</button></div>
-    <div style="text-align:center;margin-top:8px" id="github-token-setup" style="display:none">
-      <button onclick="promptGithubToken()" style="background:none;border:1px solid var(--accent2);color:var(--accent2);padding:6px 14px;border-radius:6px;cursor:pointer;font-size:11px;font-family:inherit">
+    <div style="text-align:center;margin-top:8px" id="github-token-setup">
+      <div id="token-status-msg" style="font-size:10px;color:var(--text3);margin-bottom:6px"></div>
+      <button onclick="promptGithubToken()" id="connect-github-btn" style="background:none;border:1px solid var(--accent2);color:var(--accent2);padding:6px 14px;border-radius:6px;cursor:pointer;font-size:11px;font-family:inherit">
         &#128279; Connect GitHub Storage
       </button>
     </div>
@@ -1537,7 +1539,8 @@ function loadFromCloud(callback){
   })
   .catch(function(err){
     console.error('[VITA] loadFromCloud failed:',err);
-    showCloudStatus('Sync failed - using local data','error');
+    var _tokenMissing = !localStorage.getItem('vitaGithubToken');
+    showCloudStatus(_tokenMissing ? 'No GitHub token - using local data' : 'Sync failed - using local data', _tokenMissing ? 'warn' : 'error');
     var loaded=false;
     try{
       var _lc=localStorage.getItem('vitaPipelineData_v1');
@@ -1807,6 +1810,23 @@ function renderActivityLog(){
 function clearCacheAndReload(){if(confirm("Clear all cached data and reload from cloud?")){try{["vitaPipelineData_v1","vitaActivityLog_v1","vitaLogLastRead","vitaDeletedRows_v1","vitaVersions_v1"].forEach(function(k){localStorage.removeItem(k);});["North America","South America","EMEA","ASPC"].forEach(function(r){localStorage.removeItem("vitaRegion_"+r.replace(/ /g,"_"));});}catch(e){}location.reload();}}
 
 function clearCacheAndReload(){if(confirm("Clear cached data and reload?")){try{["vitaPipelineData_v1","vitaActivityLog_v1","vitaLogLastRead","vitaVersions_v1"].forEach(function(k){localStorage.removeItem(k);});}catch(e){}location.reload();}}
+function initLoginScreen(){
+  GITHUB_TOKEN = localStorage.getItem('vitaGithubToken') || '';
+  var msg = document.getElementById('token-status-msg');
+  var btn = document.getElementById('connect-github-btn');
+  if(msg){
+    if(GITHUB_TOKEN){
+      msg.textContent = '✓ GitHub storage connected';
+      msg.style.color = 'var(--success)';
+      if(btn) btn.textContent = '&#128279; Update Token';
+    } else {
+      msg.innerHTML = '&#9888; GitHub storage not connected — data will be saved locally only';
+      msg.style.color = 'var(--warn)';
+      if(btn) btn.textContent = '&#128279; Connect GitHub Storage';
+    }
+  }
+}
+
 function doLogin(){
   // Refresh token from localStorage
   GITHUB_TOKEN = localStorage.getItem('vitaGithubToken') || '';
@@ -3624,6 +3644,9 @@ function toggleTheme(){
 }
 
 (function(){try{var _dr=localStorage.getItem("vitaDeletedRows_v1");if(_dr)deletedRows=JSON.parse(_dr);var _30d=30*24*60*60*1000;deletedRows=deletedRows.filter(function(r){return(Date.now()-r._deletedAt)<_30d;});}catch(e){deletedRows=[];}})();
+
+// Init login screen token status on page load
+document.addEventListener('DOMContentLoaded',function(){if(typeof initLoginScreen==='function')initLoginScreen();});
 
 // Load saved theme on page start
 (function(){
