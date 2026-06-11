@@ -1494,7 +1494,7 @@ function loadFromCloud(callback){
   showCloudStatus('Syncing...','syncing');
 
   fetch('https://api.github.com/repos/'+GITHUB_REPO+'/contents/'+GITHUB_FILE+'?ref='+GITHUB_BRANCH+'&t='+Date.now(),{
-    headers:{'Authorization':'token '+GITHUB_TOKEN,'Accept':'application/vnd.github.v3+json','Cache-Control':'no-cache'}
+    headers:{'Authorization':'token '+GITHUB_TOKEN,'Accept':'application/vnd.github.v3+json'}
   })
   .then(function(r){
     if(r.status===404){console.log('[VITA] vita_data.json not found - will create on first save');_githubSha=null;return null;}
@@ -1637,7 +1637,7 @@ function saveToCloud(){
 
   // Always fetch fresh SHA before writing (prevents 409 conflicts)
   fetch('https://api.github.com/repos/'+GITHUB_REPO+'/contents/'+GITHUB_FILE+'?ref='+GITHUB_BRANCH+'&t='+Date.now(),{
-    headers:{'Authorization':'token '+GITHUB_TOKEN,'Accept':'application/vnd.github.v3+json','Cache-Control':'no-cache'}
+    headers:{'Authorization':'token '+GITHUB_TOKEN,'Accept':'application/vnd.github.v3+json'}
   })
   .then(function(r){
     if(r.status===404) return null;
