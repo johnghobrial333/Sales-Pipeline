@@ -1528,18 +1528,47 @@ function loadFromCloud(callback){
     REGIONS.forEach(function(r){if(Array.isArray(src[r]))cloudTotal+=src[r].length;});
     console.log('[VITA] Cloud has',cloudTotal,'rows');
 
-    if(cloudTotal===0){
-      var localTotal=0;
-      REGIONS.forEach(function(r){if(Array.isArray(pipelineData[r]))localTotal+=pipelineData[r].length;});
-      if(localTotal>0){
-        console.log('[VITA] Cloud empty, pushing local data ('+localTotal+' rows)');
-        saveToStorage();
-        showCloudStatus('Synced','saved');updateSyncTime();lastSyncTime=Date.now();
-        if(callback)callback(true);return;
+    // Count local rows (from pipelineData in memory)
+    var localTotal=0;
+    REGIONS.forEach(function(r){if(Array.isArray(pipelineData[r]))localTotal+=pipelineData[r].length;});
+
+    // Also check localStorage directly (more reliable than in-memory)
+    var lsTotal=0;
+    try{
+      var _ls=localStorage.getItem('vitaPipelineData_v1');
+      if(_ls){
+        var _lp=JSON.parse(_ls),_lsrc=(_lp&&_lp.data)?_lp.data:_lp;
+        REGIONS.forEach(function(r){if(Array.isArray(_lsrc[r]))lsTotal+=_lsrc[r].length;});
       }
+    }catch(e){}
+    var bestLocal=Math.max(localTotal,lsTotal);
+
+    console.log('[VITA] Cloud:'+cloudTotal+' Local:'+bestLocal+'(mem:'+localTotal+' ls:'+lsTotal+')');
+
+    if(cloudTotal===0 && bestLocal>0){
+      // Cloud empty but we have local data - push local up
+      console.log('[VITA] Cloud empty, pushing local data');
+      if(lsTotal>localTotal){
+        // localStorage has more - load it first then push
+        _loadFromLocalStorage();
+      }
+      saveToStorage();
+      showCloudStatus('Synced','saved');updateSyncTime();lastSyncTime=Date.now();
+      if(callback)callback(true);return;
     }
 
-    // Use cloud data
+    if(bestLocal > cloudTotal + 5){
+      // Local has significantly more rows than cloud
+      // This means rows were added locally that weren't synced yet
+      // Push local to cloud instead of overwriting local
+      console.log('[VITA] Local ('+bestLocal+') has more rows than cloud ('+cloudTotal+') - pushing local up');
+      if(lsTotal>localTotal) _loadFromLocalStorage();
+      saveToStorage();
+      showCloudStatus('Synced','saved');updateSyncTime();lastSyncTime=Date.now();
+      if(callback)callback(true);return;
+    }
+
+    // Use cloud data (cloud is authoritative)
     var fixed={'North America':[],'South America':[],'EMEA':[],'ASPC':[]};
     for(var k in src){
       if(!Array.isArray(src[k]))continue;
