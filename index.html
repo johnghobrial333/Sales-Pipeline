@@ -730,64 +730,110 @@ body.light-theme .import-modal .modal,body.light-theme .user-modal .modal{backgr
             </div>
             <div style="display:flex;flex-direction:column;gap:6px;">
               <label style="font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--text3)">Shipping Month</label>
-              <select class="filter-select" id="units-month" style="width:150px">
-                <option value="">All Months</option>
-                <option>Jan-2024</option>
-                <option>Feb-2024</option>
-                <option>Mar-2024</option>
-                <option>Apr-2024</option>
-                <option>May-2024</option>
-                <option>Jun-2024</option>
-                <option>Jul-2024</option>
-                <option>Aug-2024</option>
-                <option>Sep-2024</option>
-                <option>Oct-2024</option>
-                <option>Nov-2024</option>
-                <option>Dec-2024</option>
-                <option>Jan-2025</option>
-                <option>Feb-2025</option>
-                <option>Mar-2025</option>
-                <option>Apr-2025</option>
-                <option>May-2025</option>
-                <option>Jun-2025</option>
-                <option>Jul-2025</option>
-                <option>Aug-2025</option>
-                <option>Sep-2025</option>
-                <option>Oct-2025</option>
-                <option>Nov-2025</option>
-                <option>Dec-2025</option>
-                <option>Jan-2026</option>
-                <option>Feb-2026</option>
-                <option>Mar-2026</option>
-                <option>Apr-2026</option>
-                <option>May-2026</option>
-                <option>Jun-2026</option>
-                <option>Jul-2026</option>
-                <option>Aug-2026</option>
-                <option>Sep-2026</option>
-                <option>Oct-2026</option>
-                <option>Nov-2026</option>
-                <option>Dec-2026</option>
-                <option>Jan-2027</option>
-                <option>Feb-2027</option>
-                <option>Mar-2027</option>
-                <option>Apr-2027</option>
-                <option>May-2027</option>
-                <option>Jun-2027</option>
-                <option>Jul-2027</option>
-                <option>Aug-2027</option>
-                <option>Sep-2027</option>
-                <option>Oct-2027</option>
-                <option>Nov-2027</option>
-                <option>Dec-2027</option>
-              </select>
+              <div class="multi-filter-wrap">
+                <button class="multi-filter-btn" onclick="toggleMultiFilter('units-month')" id="mfb-units-month" style="width:140px;text-align:left">All Months &#9660;</button>
+                <div class="multi-filter-drop" id="mfd-units-month" style="display:none;max-height:220px;overflow-y:auto">
+                  <label><input type="checkbox" value="Jan-2024" onchange="updateFilterBtn('units-month')"> Jan-2024</label>
+                  <label><input type="checkbox" value="Feb-2024" onchange="updateFilterBtn('units-month')"> Feb-2024</label>
+                  <label><input type="checkbox" value="Mar-2024" onchange="updateFilterBtn('units-month')"> Mar-2024</label>
+                  <label><input type="checkbox" value="Apr-2024" onchange="updateFilterBtn('units-month')"> Apr-2024</label>
+                  <label><input type="checkbox" value="May-2024" onchange="updateFilterBtn('units-month')"> May-2024</label>
+                  <label><input type="checkbox" value="Jun-2024" onchange="updateFilterBtn('units-month')"> Jun-2024</label>
+                  <label><input type="checkbox" value="Jul-2024" onchange="updateFilterBtn('units-month')"> Jul-2024</label>
+                  <label><input type="checkbox" value="Aug-2024" onchange="updateFilterBtn('units-month')"> Aug-2024</label>
+                  <label><input type="checkbox" value="Sep-2024" onchange="updateFilterBtn('units-month')"> Sep-2024</label>
+                  <label><input type="checkbox" value="Oct-2024" onchange="updateFilterBtn('units-month')"> Oct-2024</label>
+                  <label><input type="checkbox" value="Nov-2024" onchange="updateFilterBtn('units-month')"> Nov-2024</label>
+                  <label><input type="checkbox" value="Dec-2024" onchange="updateFilterBtn('units-month')"> Dec-2024</label>
+                  <label><input type="checkbox" value="Jan-2025" onchange="updateFilterBtn('units-month')"> Jan-2025</label>
+                  <label><input type="checkbox" value="Feb-2025" onchange="updateFilterBtn('units-month')"> Feb-2025</label>
+                  <label><input type="checkbox" value="Mar-2025" onchange="updateFilterBtn('units-month')"> Mar-2025</label>
+                  <label><input type="checkbox" value="Apr-2025" onchange="updateFilterBtn('units-month')"> Apr-2025</label>
+                  <label><input type="checkbox" value="May-2025" onchange="updateFilterBtn('units-month')"> May-2025</label>
+                  <label><input type="checkbox" value="Jun-2025" onchange="updateFilterBtn('units-month')"> Jun-2025</label>
+                  <label><input type="checkbox" value="Jul-2025" onchange="updateFilterBtn('units-month')"> Jul-2025</label>
+                  <label><input type="checkbox" value="Aug-2025" onchange="updateFilterBtn('units-month')"> Aug-2025</label>
+                  <label><input type="checkbox" value="Sep-2025" onchange="updateFilterBtn('units-month')"> Sep-2025</label>
+                  <label><input type="checkbox" value="Oct-2025" onchange="updateFilterBtn('units-month')"> Oct-2025</label>
+                  <label><input type="checkbox" value="Nov-2025" onchange="updateFilterBtn('units-month')"> Nov-2025</label>
+                  <label><input type="checkbox" value="Dec-2025" onchange="updateFilterBtn('units-month')"> Dec-2025</label>
+                  <label><input type="checkbox" value="Jan-2026" onchange="updateFilterBtn('units-month')"> Jan-2026</label>
+                  <label><input type="checkbox" value="Feb-2026" onchange="updateFilterBtn('units-month')"> Feb-2026</label>
+                  <label><input type="checkbox" value="Mar-2026" onchange="updateFilterBtn('units-month')"> Mar-2026</label>
+                  <label><input type="checkbox" value="Apr-2026" onchange="updateFilterBtn('units-month')"> Apr-2026</label>
+                  <label><input type="checkbox" value="May-2026" onchange="updateFilterBtn('units-month')"> May-2026</label>
+                  <label><input type="checkbox" value="Jun-2026" onchange="updateFilterBtn('units-month')"> Jun-2026</label>
+                  <label><input type="checkbox" value="Jul-2026" onchange="updateFilterBtn('units-month')"> Jul-2026</label>
+                  <label><input type="checkbox" value="Aug-2026" onchange="updateFilterBtn('units-month')"> Aug-2026</label>
+                  <label><input type="checkbox" value="Sep-2026" onchange="updateFilterBtn('units-month')"> Sep-2026</label>
+                  <label><input type="checkbox" value="Oct-2026" onchange="updateFilterBtn('units-month')"> Oct-2026</label>
+                  <label><input type="checkbox" value="Nov-2026" onchange="updateFilterBtn('units-month')"> Nov-2026</label>
+                  <label><input type="checkbox" value="Dec-2026" onchange="updateFilterBtn('units-month')"> Dec-2026</label>
+                  <label><input type="checkbox" value="Jan-2027" onchange="updateFilterBtn('units-month')"> Jan-2027</label>
+                  <label><input type="checkbox" value="Feb-2027" onchange="updateFilterBtn('units-month')"> Feb-2027</label>
+                  <label><input type="checkbox" value="Mar-2027" onchange="updateFilterBtn('units-month')"> Mar-2027</label>
+                  <label><input type="checkbox" value="Apr-2027" onchange="updateFilterBtn('units-month')"> Apr-2027</label>
+                  <label><input type="checkbox" value="May-2027" onchange="updateFilterBtn('units-month')"> May-2027</label>
+                  <label><input type="checkbox" value="Jun-2027" onchange="updateFilterBtn('units-month')"> Jun-2027</label>
+                  <label><input type="checkbox" value="Jul-2027" onchange="updateFilterBtn('units-month')"> Jul-2027</label>
+                  <label><input type="checkbox" value="Aug-2027" onchange="updateFilterBtn('units-month')"> Aug-2027</label>
+                  <label><input type="checkbox" value="Sep-2027" onchange="updateFilterBtn('units-month')"> Sep-2027</label>
+                  <label><input type="checkbox" value="Oct-2027" onchange="updateFilterBtn('units-month')"> Oct-2027</label>
+                  <label><input type="checkbox" value="Nov-2027" onchange="updateFilterBtn('units-month')"> Nov-2027</label>
+                  <label><input type="checkbox" value="Dec-2027" onchange="updateFilterBtn('units-month')"> Dec-2027</label>
+                  <label><input type="checkbox" value="Jan-2028" onchange="updateFilterBtn('units-month')"> Jan-2028</label>
+                  <label><input type="checkbox" value="Feb-2028" onchange="updateFilterBtn('units-month')"> Feb-2028</label>
+                  <label><input type="checkbox" value="Mar-2028" onchange="updateFilterBtn('units-month')"> Mar-2028</label>
+                  <label><input type="checkbox" value="Apr-2028" onchange="updateFilterBtn('units-month')"> Apr-2028</label>
+                  <label><input type="checkbox" value="May-2028" onchange="updateFilterBtn('units-month')"> May-2028</label>
+                  <label><input type="checkbox" value="Jun-2028" onchange="updateFilterBtn('units-month')"> Jun-2028</label>
+                  <label><input type="checkbox" value="Jul-2028" onchange="updateFilterBtn('units-month')"> Jul-2028</label>
+                  <label><input type="checkbox" value="Aug-2028" onchange="updateFilterBtn('units-month')"> Aug-2028</label>
+                  <label><input type="checkbox" value="Sep-2028" onchange="updateFilterBtn('units-month')"> Sep-2028</label>
+                  <label><input type="checkbox" value="Oct-2028" onchange="updateFilterBtn('units-month')"> Oct-2028</label>
+                  <label><input type="checkbox" value="Nov-2028" onchange="updateFilterBtn('units-month')"> Nov-2028</label>
+                  <label><input type="checkbox" value="Dec-2028" onchange="updateFilterBtn('units-month')"> Dec-2028</label>
+                  <label><input type="checkbox" value="Jan-2029" onchange="updateFilterBtn('units-month')"> Jan-2029</label>
+                  <label><input type="checkbox" value="Feb-2029" onchange="updateFilterBtn('units-month')"> Feb-2029</label>
+                  <label><input type="checkbox" value="Mar-2029" onchange="updateFilterBtn('units-month')"> Mar-2029</label>
+                  <label><input type="checkbox" value="Apr-2029" onchange="updateFilterBtn('units-month')"> Apr-2029</label>
+                  <label><input type="checkbox" value="May-2029" onchange="updateFilterBtn('units-month')"> May-2029</label>
+                  <label><input type="checkbox" value="Jun-2029" onchange="updateFilterBtn('units-month')"> Jun-2029</label>
+                  <label><input type="checkbox" value="Jul-2029" onchange="updateFilterBtn('units-month')"> Jul-2029</label>
+                  <label><input type="checkbox" value="Aug-2029" onchange="updateFilterBtn('units-month')"> Aug-2029</label>
+                  <label><input type="checkbox" value="Sep-2029" onchange="updateFilterBtn('units-month')"> Sep-2029</label>
+                  <label><input type="checkbox" value="Oct-2029" onchange="updateFilterBtn('units-month')"> Oct-2029</label>
+                  <label><input type="checkbox" value="Nov-2029" onchange="updateFilterBtn('units-month')"> Nov-2029</label>
+                  <label><input type="checkbox" value="Dec-2029" onchange="updateFilterBtn('units-month')"> Dec-2029</label>
+                  <label><input type="checkbox" value="Jan-2030" onchange="updateFilterBtn('units-month')"> Jan-2030</label>
+                  <label><input type="checkbox" value="Feb-2030" onchange="updateFilterBtn('units-month')"> Feb-2030</label>
+                  <label><input type="checkbox" value="Mar-2030" onchange="updateFilterBtn('units-month')"> Mar-2030</label>
+                  <label><input type="checkbox" value="Apr-2030" onchange="updateFilterBtn('units-month')"> Apr-2030</label>
+                  <label><input type="checkbox" value="May-2030" onchange="updateFilterBtn('units-month')"> May-2030</label>
+                  <label><input type="checkbox" value="Jun-2030" onchange="updateFilterBtn('units-month')"> Jun-2030</label>
+                  <label><input type="checkbox" value="Jul-2030" onchange="updateFilterBtn('units-month')"> Jul-2030</label>
+                  <label><input type="checkbox" value="Aug-2030" onchange="updateFilterBtn('units-month')"> Aug-2030</label>
+                  <label><input type="checkbox" value="Sep-2030" onchange="updateFilterBtn('units-month')"> Sep-2030</label>
+                  <label><input type="checkbox" value="Oct-2030" onchange="updateFilterBtn('units-month')"> Oct-2030</label>
+                  <label><input type="checkbox" value="Nov-2030" onchange="updateFilterBtn('units-month')"> Nov-2030</label>
+                  <label><input type="checkbox" value="Dec-2030" onchange="updateFilterBtn('units-month')"> Dec-2030</label>
+                </div>
+              </div>
             </div>
             <div style="display:flex;flex-direction:column;gap:6px;">
               <label style="font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--text3)">Year</label>
-              <select class="filter-select" id="units-year" style="width:110px">
-                <option value="">All Years</option>
-                <option>2024</option><option>2025</option><option>2026</option><option>2027</option>
-              </select>
+              <div class="multi-filter-wrap">
+                <button class="multi-filter-btn" onclick="toggleMultiFilter('units-year')" id="mfb-units-year" style="width:110px;text-align:left">All Years &#9660;</button>
+                <div class="multi-filter-drop" id="mfd-units-year" style="display:none">
+                  <label><input type="checkbox" value="2024" onchange="updateFilterBtn('units-year')"> 2024</label>
+                  <label><input type="checkbox" value="2025" onchange="updateFilterBtn('units-year')"> 2025</label>
+                  <label><input type="checkbox" value="2026" onchange="updateFilterBtn('units-year')"> 2026</label>
+                  <label><input type="checkbox" value="2027" onchange="updateFilterBtn('units-year')"> 2027</label>
+                  <label><input type="checkbox" value="2028" onchange="updateFilterBtn('units-year')"> 2028</label>
+                  <label><input type="checkbox" value="2029" onchange="updateFilterBtn('units-year')"> 2029</label>
+                  <label><input type="checkbox" value="2030" onchange="updateFilterBtn('units-year')"> 2030</label>
+                </div>
+              </div>
             </div>
             <div style="display:flex;flex-direction:column;gap:6px;">
               <label style="font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--text3)">Status</label>
@@ -797,6 +843,31 @@ body.light-theme .import-modal .modal,body.light-theme .user-modal .modal{backgr
                 <option>Proposal</option><option>In Negotiation</option><option>Purchasing</option>
                 <option>Received PO - Pending Shipping</option><option>Received PO - Shipped</option>
               </select>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:6px;">
+              <label style="font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--text3)">Product</label>
+              <div class="multi-filter-wrap">
+                <button class="multi-filter-btn" onclick="toggleMultiFilter('units-product')" id="mfb-units-product" style="width:150px;text-align:left">All Products &#9660;</button>
+                <div class="multi-filter-drop" id="mfd-units-product" style="display:none">
+                  <label><input type="checkbox" value="AI" onchange="updateFilterBtn('units-product')"> AI</label>
+                  <label><input type="checkbox" value="Ceia" onchange="updateFilterBtn('units-product')"> Ceia</label>
+                  <label><input type="checkbox" value="Explosive Detector" onchange="updateFilterBtn('units-product')"> Explosive Detector</label>
+                  <label><input type="checkbox" value="Spare Parts" onchange="updateFilterBtn('units-product')"> Spare Parts</label>
+                  <label><input type="checkbox" value="V-50" onchange="updateFilterBtn('units-product')"> V-50</label>
+                  <label><input type="checkbox" value="V-50S" onchange="updateFilterBtn('units-product')"> V-50S</label>
+                  <label><input type="checkbox" value="V-60" onchange="updateFilterBtn('units-product')"> V-60</label>
+                  <label><input type="checkbox" value="V-60C" onchange="updateFilterBtn('units-product')"> V-60C</label>
+                  <label><input type="checkbox" value="V-60D" onchange="updateFilterBtn('units-product')"> V-60D</label>
+                  <label><input type="checkbox" value="V-60S" onchange="updateFilterBtn('units-product')"> V-60S</label>
+                  <label><input type="checkbox" value="V-6D" onchange="updateFilterBtn('units-product')"> V-6D</label>
+                  <label><input type="checkbox" value="V-70" onchange="updateFilterBtn('units-product')"> V-70</label>
+                  <label><input type="checkbox" value="V-70D" onchange="updateFilterBtn('units-product')"> V-70D</label>
+                  <label><input type="checkbox" value="V-100" onchange="updateFilterBtn('units-product')"> V-100</label>
+                  <label><input type="checkbox" value="V-100D" onchange="updateFilterBtn('units-product')"> V-100D</label>
+                  <label><input type="checkbox" value="V-100DT" onchange="updateFilterBtn('units-product')"> V-100DT</label>
+                  <label><input type="checkbox" value="V-100T" onchange="updateFilterBtn('units-product')"> V-100T</label>
+                </div>
+              </div>
             </div>
             <button class="btn-search" onclick="runUnitsReport()">&#x2315; Generate Report</button>
             <button class="btn btn-outline" onclick="exportUnitsCSV()" id="units-export-btn" style="display:none">&#x2193; Export CSV</button>
@@ -2130,7 +2201,7 @@ function emptyRecycleBin(){
 }
 
 
-var _ALL_FILTERS=['status','product','country','rpt-status','rpt-product','rpt-territory','rpt-quarter'];
+var _ALL_FILTERS=['status','product','country','rpt-status','rpt-product','rpt-territory','rpt-quarter','units-month','units-year','units-product'];
 function toggleMultiFilter(name){
   var drop=document.getElementById('mfd-'+name);
   if(!drop) return;
@@ -2152,7 +2223,7 @@ function updateFilterBtn(name){
   var btn=document.getElementById('mfb-'+name);
   if(!btn) return;
   var vals=getMultiFilterValues(name);
-  var labels={status:'Status',product:'Product',country:'Country','rpt-status':'All Statuses','rpt-product':'All Products','rpt-territory':'All Territories','rpt-quarter':'All Months'};
+  var labels={status:'Status',product:'Product',country:'Country','rpt-status':'All Statuses','rpt-product':'All Products','rpt-territory':'All Territories','rpt-quarter':'All Months','units-month':'All Months','units-year':'All Years','units-product':'All Products'};
   if(!vals.length){btn.textContent=(labels[name]||name)+' ▼';btn.classList.remove('active');}
   else if(vals.length===1){btn.textContent=vals[0].length>16?vals[0].slice(0,14)+'…':vals[0];btn.classList.add('active');}
   else{btn.textContent=(labels[name]||name.replace('rpt-',''))+': '+vals.length+' ▼';btn.classList.add('active');}
@@ -3618,8 +3689,9 @@ var unitsReportData = [];
 
 function runUnitsReport(){
   var filterTerritory = document.getElementById('units-territory').value;
-  var filterMonth     = document.getElementById('units-month').value;
-  var filterYear      = document.getElementById('units-year').value;
+  var filterMonths    = getMultiFilterValues('units-month');
+  var filterYears     = getMultiFilterValues('units-year');
+  var filterProducts  = getMultiFilterValues('units-product');
   var filterStatus    = document.getElementById('units-status').value;
 
   // Collect all rows
@@ -3631,13 +3703,14 @@ function runUnitsReport(){
   }
 
   // Apply filters
-  if(filterTerritory) allRows = allRows.filter(function(r){return r._region === filterTerritory;});
-  if(filterMonth)     allRows = allRows.filter(function(r){return (r['Shipping Quarter']||'') === filterMonth;});
-  if(filterYear)      allRows = allRows.filter(function(r){
-    var sq = r['Shipping Quarter']||'';
-    return sq.indexOf('-'+filterYear) >= 0;
+  if(filterTerritory)     allRows = allRows.filter(function(r){return r._region === filterTerritory;});
+  if(filterMonths.length)  allRows = allRows.filter(function(r){return filterMonths.indexOf(r['Shipping Quarter']||'')>=0;});
+  if(filterYears.length)   allRows = allRows.filter(function(r){
+    var sq=r['Shipping Quarter']||'';
+    return filterYears.some(function(y){return sq.indexOf('-'+y)>=0;});
   });
-  if(filterStatus)    allRows = allRows.filter(function(r){return r.Probability === filterStatus;});
+  if(filterProducts.length) allRows = allRows.filter(function(r){return filterProducts.indexOf(r.Product||'')>=0;});
+  if(filterStatus)         allRows = allRows.filter(function(r){return r.Probability === filterStatus;});
 
   unitsReportData = allRows;
 
@@ -3676,10 +3749,11 @@ function runUnitsReport(){
 
   // Build title
   var titleParts = [];
-  if(filterTerritory) titleParts.push(territoryNames[filterTerritory]||filterTerritory);
-  if(filterMonth)     titleParts.push(filterMonth);
-  else if(filterYear) titleParts.push(filterYear);
-  if(filterStatus)    titleParts.push(filterStatus);
+  if(filterTerritory)      titleParts.push(territoryNames[filterTerritory]||filterTerritory);
+  if(filterMonths.length)  titleParts.push(filterMonths.length===1?filterMonths[0]:filterMonths.length+' months');
+  else if(filterYears.length) titleParts.push(filterYears.length===1?filterYears[0]:filterYears.length+' years');
+  if(filterProducts.length) titleParts.push(filterProducts.length===1?filterProducts[0]:filterProducts.length+' products');
+  if(filterStatus)         titleParts.push(filterStatus);
   document.getElementById('units-title').textContent = (titleParts.length ? titleParts.join(' · ')+' — ' : '') + 'Units by Model';
   document.getElementById('units-count').textContent = allRows.length+' opportunities · '+totalUnits+' total units';
 
