@@ -851,7 +851,7 @@ body.light-theme .import-modal .modal,body.light-theme .user-modal .modal{backgr
               <label style="font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--text3)">Status</label>
               <div class="multi-filter-wrap">
                 <button class="multi-filter-btn" onclick="toggleMultiFilter('units-status')" id="mfb-units-status" style="width:220px;text-align:left">All Statuses &#9660;</button>
-                <div class="id="mfd-units-status" style="display:none">
+                <div class="multi-filter-drop" id="mfd-units-status" style="display:none">
                   <label><input type="checkbox" value="In discussion" onchange="updateFilterBtn('units-status')"> In discussion</label>
                   <label><input type="checkbox" value="Identified Decision makers" onchange="updateFilterBtn('units-status')"> Identified Decision makers</label>
                   <label><input type="checkbox" value="Proposal" onchange="updateFilterBtn('units-status')"> Proposal</label>
@@ -867,25 +867,7 @@ body.light-theme .import-modal .modal,body.light-theme .user-modal .modal{backgr
               <label style="font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--text3)">Product</label>
               <div class="multi-filter-wrap">
                 <button class="multi-filter-btn" onclick="toggleMultiFilter('units-product')" id="mfb-units-product" style="width:150px;text-align:left">All Products &#9660;</button>
-                <div class="multi-filter-drop" id="mfd-units-product" style="display:none">
-                  <label><input type="checkbox" value="AI" onchange="updateFilterBtn('units-product')"> AI</label>
-                  <label><input type="checkbox" value="Ceia" onchange="updateFilterBtn('units-product')"> Ceia</label>
-                  <label><input type="checkbox" value="Explosive Detector" onchange="updateFilterBtn('units-product')"> Explosive Detector</label>
-                  <label><input type="checkbox" value="Spare Parts" onchange="updateFilterBtn('units-product')"> Spare Parts</label>
-                  <label><input type="checkbox" value="V-50" onchange="updateFilterBtn('units-product')"> V-50</label>
-                  <label><input type="checkbox" value="V-50S" onchange="updateFilterBtn('units-product')"> V-50S</label>
-                  <label><input type="checkbox" value="V-60" onchange="updateFilterBtn('units-product')"> V-60</label>
-                  <label><input type="checkbox" value="V-60C" onchange="updateFilterBtn('units-product')"> V-60C</label>
-                  <label><input type="checkbox" value="V-60D" onchange="updateFilterBtn('units-product')"> V-60D</label>
-                  <label><input type="checkbox" value="V-60S" onchange="updateFilterBtn('units-product')"> V-60S</label>
-                  <label><input type="checkbox" value="V-6D" onchange="updateFilterBtn('units-product')"> V-6D</label>
-                  <label><input type="checkbox" value="V-70" onchange="updateFilterBtn('units-product')"> V-70</label>
-                  <label><input type="checkbox" value="V-70D" onchange="updateFilterBtn('units-product')"> V-70D</label>
-                  <label><input type="checkbox" value="V-100" onchange="updateFilterBtn('units-product')"> V-100</label>
-                  <label><input type="checkbox" value="V-100D" onchange="updateFilterBtn('units-product')"> V-100D</label>
-                  <label><input type="checkbox" value="V-100DT" onchange="updateFilterBtn('units-product')"> V-100DT</label>
-                  <label><input type="checkbox" value="V-100T" onchange="updateFilterBtn('units-product')"> V-100T</label>
-                </div>
+                <div class="multi-filter-drop" id="mfd-units-product" style="display:none"></div>
               </div>
             </div>
             <div style="display:flex;flex-direction:column;gap:6px;">
@@ -3884,6 +3866,18 @@ function filterMonthsByYear(){
 }
 
 function runUnitsReport(){
+  // Refresh product dropdown with all products from data
+  (function(){
+    var drop = document.getElementById('mfd-units-product');
+    if(!drop || drop.children.length > 0) return;
+    var prods = {};
+    ['North America','South America','EMEA','ASPC'].forEach(function(r){
+      (pipelineData[r]||[]).forEach(function(row){ if(row.Product) prods[row.Product]=true; });
+    });
+    drop.innerHTML = Object.keys(prods).sort().map(function(p){
+      return '<label><input type="checkbox" value="'+p.replace(/"/g,'&quot;')+'" onchange="updateFilterBtn(\'units-product\')"> '+p+'</label>';
+    }).join('');
+  })();
   var filterTerritory = document.getElementById('units-territory').value;
   var filterMonths    = getMultiFilterValues('units-month');
   var filterYears     = getMultiFilterValues('units-year');
