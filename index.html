@@ -1894,7 +1894,10 @@ function startAutoSync(){
     if(typeof navigator !== 'undefined' && !navigator.onLine) return; // offline
     loadFromCloud(function(ok){
       if(ok){
-        renderPipeline();
+        // Don't disrupt user if they are actively using the filter
+        var activeEl = document.activeElement;
+        var userFiltering = activeEl && (activeEl.id==='filter-customer');
+        if(!userFiltering) renderPipeline();
         if(isAdmin && adminViewRegion === 'analytics') renderAnalytics();
         if(isAdmin && adminViewRegion === 'activity') renderActivityLog();
         updateLogBadge();
@@ -2614,6 +2617,9 @@ function renderPipeline(){
     '<span class="page-info">Page '+currentPage+' of '+totalPages+' &nbsp;·&nbsp; '+Math.min(start+1,total)+'–'+Math.min(start+effPS,total)+' of '+total+'</span>'+
     '<button class="page-btn" onclick="changePage(1)"'+(currentPage>=totalPages?' disabled':'')+'>Next →</button>';}
   document.getElementById('pipeline-meta').textContent=(territoryNames[currentRegion]||currentRegion)+' · Updated '+new Date().toLocaleDateString();
+  // Re-apply customer text filter if active (survives re-renders from auto-sync)
+  var _fc=(document.getElementById('filter-customer')||{}).value||'';
+  if(_fc) setTimeout(function(){ _applyCustomerFilter(); }, 0);
 }
 
 // ══════════════════════════════════════════════════════════
