@@ -3469,6 +3469,42 @@ function showAnalyticsTab(tab){
       });
     });
   }
+  // Populate units-product from live pipeline data when units tab opens
+  if(isUnits){
+    var drop = document.getElementById('mfd-units-product');
+    if(drop){
+      var prods = {};
+      ['North America','South America','EMEA','ASPC'].forEach(function(r){
+        (pipelineData[r]||[]).forEach(function(row){ if(row.Product) prods[row.Product]=true; });
+      });
+      drop.innerHTML = Object.keys(prods).sort().map(function(p){
+        return '<label><input type="checkbox" value="'+p.replace(/"/g,'&quot;')+'" onchange="updateFilterBtn(\'units-product\')"> '+p+'</label>';
+      }).join('');
+    }
+    // Also populate rpt-product for custom report tab
+    var rdrop = document.getElementById('mfd-rpt-product');
+    if(rdrop && rdrop.children.length === 0){
+      var prods2 = {};
+      ['North America','South America','EMEA','ASPC'].forEach(function(r){
+        (pipelineData[r]||[]).forEach(function(row){ if(row.Product) prods2[row.Product]=true; });
+      });
+      rdrop.innerHTML = Object.keys(prods2).sort().map(function(p){
+        return '<label><input type="checkbox" value="'+p.replace(/"/g,'&quot;')+'" onchange="updateFilterBtn(\'rpt-product\')"> '+p+'</label>';
+      }).join('');
+    }
+  }
+  if(isReport){
+    var rdrop = document.getElementById('mfd-rpt-product');
+    if(rdrop && rdrop.children.length === 0){
+      var prods3 = {};
+      ['North America','South America','EMEA','ASPC'].forEach(function(r){
+        (pipelineData[r]||[]).forEach(function(row){ if(row.Product) prods3[row.Product]=true; });
+      });
+      rdrop.innerHTML = Object.keys(prods3).sort().map(function(p){
+        return '<label><input type="checkbox" value="'+p.replace(/"/g,'&quot;')+'" onchange="updateFilterBtn(\'rpt-product\')"> '+p+'</label>';
+      }).join('');
+    }
+  }
 }
 
 // ══════════════════════════════════════════════════════════
