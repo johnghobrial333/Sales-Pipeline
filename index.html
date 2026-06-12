@@ -503,6 +503,7 @@ body.light-theme .import-modal .modal,body.light-theme .user-modal .modal{backgr
             <th onclick="sortBy('Probability')" id="th-prob">Status</th>
             <th>Prob %</th>
             <th onclick="sortBy('Weighted  Forecast')" id="th-wtd">Wtd Forecast</th>
+            <th>Deal Type</th>
             <th>Shipping Month</th>
             <th>Notes</th>
             <th style="font-size:9px">Created</th>
@@ -581,6 +582,17 @@ body.light-theme .import-modal .modal,body.light-theme .user-modal .modal{backgr
               <div class="multi-filter-wrap" style="display:inline-block">
                 <button class="multi-filter-btn" onclick="toggleMultiFilter('rpt-product')" id="mfb-rpt-product" style="width:160px;text-align:left">All Products &#9660;</button>
                 <div class="multi-filter-drop" id="mfd-rpt-product" style="display:none"></div>
+              </div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:6px;">
+              <label style="font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--text3)">Deal Type</label>
+              <div class="multi-filter-wrap">
+                <button class="multi-filter-btn" onclick="toggleMultiFilter('rpt-dealtype')" id="mfb-rpt-dealtype" style="width:140px;text-align:left">All Types &#9660;</button>
+                <div class="multi-filter-drop" id="mfd-rpt-dealtype" style="display:none">
+                  <label><input type="checkbox" value="Sale" onchange="updateFilterBtn('rpt-dealtype')"> Sale</label>
+                  <label><input type="checkbox" value="Rental" onchange="updateFilterBtn('rpt-dealtype')"> Rental</label>
+                  <label><input type="checkbox" value="Lease" onchange="updateFilterBtn('rpt-dealtype')"> Lease</label>
+                </div>
               </div>
             </div>
             <div style="display:flex;flex-direction:column;gap:6px;">
@@ -1104,6 +1116,14 @@ body.light-theme .import-modal .modal,body.light-theme .user-modal .modal{backgr
           <option>In discussion</option><option>Identified Decision makers</option><option>Proposal</option>
           <option>In Negotiation</option><option>Purchasing</option>
           <option>Received PO - Pending Shipping</option><option>Received PO - Shipped</option><option>Lost</option>
+        </select>
+      </div>
+      <div class="modal-field"><label>Deal Type</label>
+        <select id="f-dealtype">
+          <option value="">-- Select type --</option>
+          <option value="Sale">Sale</option>
+          <option value="Rental">Rental</option>
+          <option value="Lease">Lease</option>
         </select>
       </div>
       <div class="modal-field"><label>Forecast Close</label><input id="f-forecast" type="text"></div>
@@ -2205,7 +2225,7 @@ function emptyRecycleBin(){
 }
 
 
-var _ALL_FILTERS=['status','product','country','rpt-status','rpt-product','rpt-territory','rpt-quarter','units-month','units-year','units-product'];
+var _ALL_FILTERS=['status','product','country','rpt-status','rpt-product','rpt-dealtype','rpt-territory','rpt-quarter','units-month','units-year','units-product'];
 function toggleMultiFilter(name){
   var drop=document.getElementById('mfd-'+name);
   if(!drop) return;
@@ -2227,7 +2247,7 @@ function updateFilterBtn(name){
   var btn=document.getElementById('mfb-'+name);
   if(!btn) return;
   var vals=getMultiFilterValues(name);
-  var labels={status:'Status',product:'Product',country:'Country','rpt-status':'All Statuses','rpt-product':'All Products','rpt-territory':'All Territories','rpt-quarter':'All Months','units-month':'All Months','units-year':'All Years','units-product':'All Products'};
+  var labels={status:'Status',product:'Product',country:'Country','rpt-status':'All Statuses','rpt-product':'All Products','rpt-territory':'All Territories','rpt-dealtype':'All Types','rpt-quarter':'All Months','units-month':'All Months','units-year':'All Years','units-product':'All Products'};
   if(!vals.length){btn.textContent=(labels[name]||name)+' ▼';btn.classList.remove('active');}
   else if(vals.length===1){btn.textContent=vals[0].length>16?vals[0].slice(0,14)+'…':vals[0];btn.classList.add('active');}
   else{btn.textContent=(labels[name]||name.replace('rpt-',''))+': '+vals.length+' ▼';btn.classList.add('active');}
@@ -2599,6 +2619,9 @@ function renderPipeline(){
         '<td><select class="status-select" onchange="updateStatus(\''+region+'\','+gi+',this.value)">'+opts+'</select></td>'+
         '<td style="text-align:center">'+(row['Prob %']!==''&&row['Prob %']!==undefined?(Number(row['Prob %'])*100).toFixed(0)+'%':'')+'</td>'+
         '<td class="amount'+(wf>0?' amount-pos':'')+'">$'+fmtN(wf)+'</td>'+
+        '<td style="color:var(--text2);font-size:11px">'+
+          (row['Deal Type'] ? '<span style="padding:2px 7px;border-radius:10px;font-size:10px;font-weight:600;background:'+(row['Deal Type']==='Sale'?'rgba(0,200,100,.15)':row['Deal Type']==='Rental'?'rgba(0,150,255,.15)':'rgba(255,180,0,.15)')+';color:'+(row['Deal Type']==='Sale'?'#00c864':row['Deal Type']==='Rental'?'#0096ff':'#ffb400')+'">'+esc(row['Deal Type'])+'</span>' : '') +
+        '</td>'+
         '<td style="color:var(--text2)">'+esc(row['Shipping Quarter'])+'</td>'+
         '<td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text3)" title="'+esc(row.Notes)+'">'+esc(row.Notes)+'</td>'+
         '<td style="font-size:10px;color:var(--text3);white-space:nowrap" title="Added by: '+(row._createdBy||'?')+'">'+(row._createdAt?new Date(row._createdAt).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}):'')+'</td>'+
@@ -2767,6 +2790,8 @@ function editRow(region, idx){
   var sqOpts = Array.from(sqSel.options).map(function(o){return o.value;});
   sqSel.value = sqOpts.indexOf(row['Shipping Quarter']||'') >= 0 ? (row['Shipping Quarter']||'') : '';
   document.getElementById('f-notes').value = row.Notes||'';
+  var dtSel = document.getElementById('f-dealtype');
+  if(dtSel) dtSel.value = row['Deal Type']||'';
   // Store edit context
   editingRow = row; // save full row for _createdAt/_createdBy preservation
   document.getElementById('f-edit-idx').value = row._id || idx;
@@ -2804,6 +2829,7 @@ function saveRow(){
     'Prob %':STATUS_PROB[prob]||0,
     'Forecast  Close':document.getElementById('f-forecast').value,
     'Weighted  Forecast':amt*(STATUS_PROB[prob]||0),
+    'Deal Type':document.getElementById('f-dealtype').value,
     'Shipping Quarter':document.getElementById('f-shipqtr').value,
     'Notes':document.getElementById('f-notes').value
   };
@@ -3409,8 +3435,9 @@ var reportData = [];
 
 function runCustomReport(){
   var filterRegions  = getMultiFilterValues('rpt-territory');
-  var filterStatuses = getMultiFilterValues('rpt-status');
-  var filterProducts = getMultiFilterValues('rpt-product');
+  var filterStatuses  = getMultiFilterValues('rpt-status');
+  var filterProducts  = getMultiFilterValues('rpt-product');
+  var filterDealTypes = getMultiFilterValues('rpt-dealtype');
   var filterQuarters = getMultiFilterValues('rpt-quarter');
   var sortField     = document.getElementById('rpt-sort').value;
 
@@ -3477,8 +3504,8 @@ function runCustomReport(){
   document.getElementById('rpt-count').textContent = allRows.length + ' results';
 
   // Table
-  var cols = ['_region','Distributor','Country','Product','# Units','Amount USD','Probability','Weighted  Forecast','Shipping Quarter','Notes','_createdAt'];
-  var labels = ['Territory','Customer','Country','Product','Units','Amount USD','Status','Wtd Forecast','Shipping Month','Notes','Created'];
+  var cols = ['_region','Distributor','Country','Product','# Units','Amount USD','Probability','Weighted  Forecast','Deal Type','Shipping Quarter','Notes','_createdAt'];
+  var labels = ['Territory','Customer','Country','Product','Units','Amount USD','Status','Wtd Forecast','Deal Type','Shipping Month','Notes','Created'];
   document.getElementById('rpt-thead').innerHTML = labels.map(function(l,i){
     return '<th onclick="sortReport(\''+cols[i]+'\')">'+l+' ↕</th>';
   }).join('');
@@ -3494,6 +3521,7 @@ function runCustomReport(){
       '<td>'+statusBadge(row.Probability)+'</td>'+
       '<td class="amount amount-pos">$'+fmtN(row['Weighted  Forecast']||row['Weighted Forecast'])+'</td>'+
       '<td style="color:var(--text2)">'+esc(row['Shipping Quarter'])+'</td>'+
+      '<td>'+(row['Deal Type']?'<span style="padding:2px 6px;border-radius:8px;font-size:10px;font-weight:600;background:'+(row['Deal Type']==='Sale'?'rgba(0,200,100,.15)':row['Deal Type']==='Rental'?'rgba(0,150,255,.15)':'rgba(255,180,0,.15)')+';color:'+(row['Deal Type']==='Sale'?'#00c864':row['Deal Type']==='Rental'?'#0096ff':'#ffb400')+'">' +esc(row['Deal Type'])+'</span>':'')+'</td>'+
       '<td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text3)">'+esc(row.Notes)+'</td>'+
       '<td style="font-size:10px;white-space:nowrap;color:var(--text3)" title="By: '+(row._createdBy||'?')+'">'+(row._createdAt?new Date(row._createdAt).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}):'')+'</td>'+
     '</tr>';
@@ -3870,7 +3898,7 @@ function runUnitsReport(){
 
   // ── Detailed breakdown ─────────────────────────────────
   document.getElementById('units-detail-head').innerHTML =
-    ['Territory','Customer','Country','Model','Units','Shipping Month','Status','Amount USD']
+    ['Territory','Customer','Country','Model','Units','Deal Type','Shipping Month','Status','Amount USD']
     .map(function(h){return'<th style="'+thStyle+'" onclick="sortUnitsDetail(\''+h+'\')">'+h+' ↕</th>';}).join('');
 
   renderUnitsDetailTable(allRows);
@@ -3898,12 +3926,14 @@ function renderUnitsDetailTable(rows){
   var tdStyle = 'padding:9px 12px;border-bottom:1px solid var(--border);font-size:12px;';
   document.getElementById('units-detail-body').innerHTML = rows.map(function(row){
     var color = REGION_COLORS[row._region]||'#aaa';
+    var dtBadge = row['Deal Type'] ? '<span style="padding:2px 6px;border-radius:8px;font-size:10px;font-weight:600;background:'+(row['Deal Type']==='Sale'?'rgba(0,200,100,.15)':row['Deal Type']==='Rental'?'rgba(0,150,255,.15)':'rgba(255,180,0,.15)')+';color:'+(row['Deal Type']==='Sale'?'#00c864':row['Deal Type']==='Rental'?'#0096ff':'#ffb400')+'">'+esc(row['Deal Type'])+'</span>' : '';
     return '<tr>'+
       '<td style="'+tdStyle+'"><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:'+color+';margin-right:6px"></span>'+esc(territoryNames[row._region]||row._region)+'</td>'+
       '<td style="'+tdStyle+'"><strong>'+esc(row.Distributor)+'</strong></td>'+
       '<td style="'+tdStyle+'color:var(--text2)">'+esc(row.Country)+'</td>'+
       '<td style="'+tdStyle+'">'+esc(row.Product)+'</td>'+
       '<td style="'+tdStyle+'text-align:center;color:var(--accent);font-weight:600">'+(row['# Units']||0)+'</td>'+
+      '<td style="'+tdStyle+'">'+dtBadge+'</td>'+
       '<td style="'+tdStyle+'color:var(--text2)">'+esc(row['Shipping Quarter']||'')+'</td>'+
       '<td style="'+tdStyle+'">'+statusBadge(row.Probability)+'</td>'+
       '<td style="'+tdStyle+'font-variant-numeric:tabular-nums">$'+fmtN(row['Amount USD'])+'</td>'+
