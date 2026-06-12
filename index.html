@@ -1670,15 +1670,14 @@ function loadFromCloud(callback){
     }
 
     if(bestLocal > cloudTotal + 5){
-      // Local has significantly more rows than cloud
-      // This means rows were added locally that weren't synced yet
-      // Push local to cloud instead of overwriting local
-      console.log('[VITA] Local ('+bestLocal+') has more rows than cloud ('+cloudTotal+') - pushing local up');
-      if(lsTotal>localTotal) _loadFromLocalStorage();
-      saveToStorage();
-      showCloudStatus('Synced','saved');updateSyncTime();lastSyncTime=Date.now();
-      if(callback)callback(true);return;
+      // Local has more rows - but cloud is the authority for deletions
+      // Only push local if cloud is completely empty
+      // Otherwise cloud wins - this prevents deleted rows from coming back
+      console.log('[VITA] Cloud ('+cloudTotal+') is authoritative over local ('+bestLocal+') - using cloud data');
+      // Fall through to use cloud data below
     }
+
+    // Cloud is the authoritative source - always use cloud data
 
     // Use cloud data (cloud is authoritative)
     var fixed={'North America':[],'South America':[],'EMEA':[],'ASPC':[]};
