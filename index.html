@@ -3405,12 +3405,25 @@ function confirmImport(){
   renderPipeline();
 }
 function copyRow(region, idx){
-  var filtered = getFilteredRows();
-  var row = filtered[idx];
+  var arr = pipelineData[region]||[];
+  var row = null;
+  // Try _id lookup first
+  if(typeof idx==='string' && idx.indexOf('opp_')===0)
+    row = arr.find(function(r){return r._id===idx;});
+  if(!row){
+    var filtered = getFilteredRows();
+    row = filtered[Number(idx)];
+  }
   if(!row) return;
   var copy = Object.assign({}, row);
   delete copy._region;
-  copy.Distributor = copy.Distributor + ' (Copy)';
+  // Always generate new unique _id for the copy
+  copy._id = 'opp_'+Date.now()+'_'+Math.random().toString(36).substr(2,8);
+  copy._createdAt = Date.now();
+  copy._createdBy = currentUser ? currentUser.name : '?';
+  copy._updatedAt = Date.now();
+  copy._updatedBy = currentUser ? currentUser.name : '?';
+  copy.Distributor = (copy.Distributor||'') + ' (Copy)';
   pipelineData[region].push(copy);
   logActivity('added', region, copy.Distributor+' · '+copy.Product, 'Copied from existing');
   saveToStorage(); showSaved(); renderPipeline();
