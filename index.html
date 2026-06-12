@@ -2773,16 +2773,14 @@ function editRow(region, idx){
   var cSel = document.getElementById('f-country');
   var cOpts = Array.from(cSel.options).map(function(o){return o.value;});
   cSel.value = cOpts.indexOf(row.Country||'') >= 0 ? (row.Country||'') : '';
-  // Set product dropdown
+  // Set product dropdown - rebuild first to include all products
+  if(typeof rebuildProductDropdown==='function') rebuildProductDropdown(row.Product||'');
   var pSel = document.getElementById('f-product');
-  var pOpts = Array.from(pSel.options).map(function(o){return o.value;});
-  if(pOpts.indexOf(row.Product||'') >= 0){
-    pSel.value = row.Product||'';
-    document.getElementById('f-product-new').style.display='none';
-  } else {
+  if(pSel && pSel.value !== (row.Product||'')){
+    // product not in list - show custom input
     pSel.value = '__new__';
-    document.getElementById('f-product-new').style.display='block';
-    document.getElementById('f-product-new').value = row.Product||'';
+    var pNewInp = document.getElementById('f-product-new');
+    if(pNewInp){ pNewInp.style.display='block'; pNewInp.value=row.Product||''; }
   }
   // Set units
   var uSel = document.getElementById('f-units');
@@ -2811,6 +2809,7 @@ function editRow(region, idx){
 }
 
 function saveRow(){
+  try{
   var dist=document.getElementById('f-dist').value.trim();
   if(!dist){alert('Customer / Distributor is required.');return;}
   var product = getProductValue();
@@ -2889,8 +2888,9 @@ function saveRow(){
     if(typeof addCustomProduct==='function') addCustomProduct(product);
     if(typeof rebuildProductDropdown==='function') rebuildProductDropdown(product);
   }
-  closeModal('opp-modal');saveToStorage();showSaved();
+    closeModal('opp-modal');saveToStorage();showSaved();
   if(isAdmin&&targetRegion!==currentRegion){adminSwitchRegion(targetRegion);}else{renderPipeline();}
+  }catch(e){console.error('[VITA] saveRow error:',e.message,e.stack);alert('Save failed: '+e.message);}
 }
 
 function showSaved(){showSavedMsg('✓ Saved');}
