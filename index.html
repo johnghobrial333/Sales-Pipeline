@@ -2847,35 +2847,38 @@ function saveRow(){
   var editIdx = document.getElementById('f-edit-idx').value;
   var editRegion = document.getElementById('f-edit-region').value;
   if(editIdx !== '' && editRegion){
-    // EDIT MODE — find row by _id first, then by matching fields
+    // EDIT MODE - bulletproof lookup using editingRow
     var arr = pipelineData[editRegion];
+    if(!arr){ console.error('[VITA] pipelineData['+editRegion+'] missing'); return; }
     var ri = -1;
-    // Try _id lookup first (most reliable)
-    if(editIdx.indexOf('opp_') === 0){
+    // 1. Best: use stored editingRow._id
+    if(editingRow && editingRow._id)
+      ri = arr.findIndex(function(r){ return r._id === editingRow._id; });
+    // 2. editIdx as _id string
+    if(ri < 0 && editIdx && editIdx.indexOf('opp_') === 0)
       ri = arr.findIndex(function(r){ return r._id === editIdx; });
-    }
-    // Fallback: use filtered index
-    if(ri < 0){
-      var filtered = getFilteredRows();
-      var oldRow = filtered[Number(editIdx)];
-      if(oldRow){
-        ri = arr.findIndex(function(r){
-          return r._id ? r._id === oldRow._id :
-            (r.Distributor===oldRow.Distributor&&r['Amount USD']===oldRow['Amount USD']&&r.Product===oldRow.Product&&r.Country===oldRow.Country);
-        });
-      }
-    }
+    // 3. Match by distributor+product+country
+    if(ri < 0 && editingRow)
+      ri = arr.findIndex(function(r){
+        return r.Distributor===editingRow.Distributor && r.Product===editingRow.Product && r.Country===editingRow.Country;
+      });
+    // 4. Numeric index fallback
+    if(ri < 0 && !isNaN(Number(editIdx)) && Number(editIdx) < arr.length)
+      ri = Number(editIdx);
+
     if(ri >= 0){
-      var oldRow = arr[ri];
-      // If territory changed (admin only), remove from old and add to new
-      if(targetRegion !== editRegion){
-        arr.splice(ri, 1);
+      if(targetRegion && targetRegion !== editRegion){
+        if(!pipelineData[targetRegion]) pipelineData[targetRegion]=[];
+        arr.splice(ri,1);
         pipelineData[targetRegion].push(newRow);
       } else {
         pipelineData[editRegion][ri] = newRow;
       }
+    } else {
+      console.warn('[VITA] row not found for edit - appending');
+      (pipelineData[targetRegion||editRegion]=pipelineData[targetRegion||editRegion]||[]).push(newRow);
     }
-    logActivity('status', targetRegion, dist+' · '+product, 'Opportunity edited');
+    logActivity('status', targetRegion||editRegion, dist+' · '+product, 'Opportunity edited');
   } else {
     // ADD MODE
     pipelineData[targetRegion].push(newRow);
