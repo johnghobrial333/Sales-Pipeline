@@ -849,12 +849,19 @@ body.light-theme .import-modal .modal,body.light-theme .user-modal .modal{backgr
             </div>
             <div style="display:flex;flex-direction:column;gap:6px;">
               <label style="font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--text3)">Status</label>
-              <select class="filter-select" id="units-status" style="width:220px">
-                <option value="">All Statuses</option>
-                <option>In discussion</option><option>Identified Decision makers</option>
-                <option>Proposal</option><option>In Negotiation</option><option>Purchasing</option>
-                <option>Received PO - Pending Shipping</option><option>Received PO - Shipped</option>
-              </select>
+              <div class="multi-filter-wrap">
+                <button class="multi-filter-btn" onclick="toggleMultiFilter('units-status')" id="mfb-units-status" style="width:220px;text-align:left">All Statuses &#9660;</button>
+                <div class="id="mfd-units-status" style="display:none">
+                  <label><input type="checkbox" value="In discussion" onchange="updateFilterBtn('units-status')"> In discussion</label>
+                  <label><input type="checkbox" value="Identified Decision makers" onchange="updateFilterBtn('units-status')"> Identified Decision makers</label>
+                  <label><input type="checkbox" value="Proposal" onchange="updateFilterBtn('units-status')"> Proposal</label>
+                  <label><input type="checkbox" value="In Negotiation" onchange="updateFilterBtn('units-status')"> In Negotiation</label>
+                  <label><input type="checkbox" value="Purchasing" onchange="updateFilterBtn('units-status')"> Purchasing</label>
+                  <label><input type="checkbox" value="Received PO - Pending Shipping" onchange="updateFilterBtn('units-status')"> Received PO - Pending Shipping</label>
+                  <label><input type="checkbox" value="Received PO - Shipped" onchange="updateFilterBtn('units-status')"> Received PO - Shipped</label>
+                  <label><input type="checkbox" value="Lost" onchange="updateFilterBtn('units-status')"> Lost</label>
+                </div>
+              </div>
             </div>
             <div style="display:flex;flex-direction:column;gap:6px;">
               <label style="font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--text3)">Product</label>
@@ -1525,7 +1532,7 @@ var pipelineData = JSON.parse(JSON.stringify(INITIAL_DATA));
     });
   }catch(e){}
 })();
-var territoryNames = {'North America':'North America - John','South America':'South America - Karim','EMEA':'EMEA - Dina','ASPC':'ASPC - Raj'};
+var territoryNames = {'North America':'North America - John','South America':'North America - Karim','EMEA':'EMEA - Dina','ASPC':'ASPC - Raj'};
 var currentRegion = null, isAdmin = false, adminViewRegion = 'analytics';
 var currentPage = 1, pageSize = 25, sortCol = null, sortDir = 1;
 var editingRow = null; // currently-being-edited row object
@@ -2235,7 +2242,7 @@ function emptyRecycleBin(){
 }
 
 
-var _ALL_FILTERS=['status','product','country','rpt-status','rpt-product','rpt-dealtype','rpt-territory','rpt-quarter','units-month','units-year','units-product','units-dealtype'];
+var _ALL_FILTERS=['status','product','country','rpt-status','rpt-product','rpt-dealtype','rpt-territory','rpt-quarter','units-month','units-year','units-product','units-dealtype','units-status'];
 function toggleMultiFilter(name){
   var drop=document.getElementById('mfd-'+name);
   if(!drop) return;
@@ -2257,7 +2264,7 @@ function updateFilterBtn(name){
   var btn=document.getElementById('mfb-'+name);
   if(!btn) return;
   var vals=getMultiFilterValues(name);
-  var labels={status:'Status',product:'Product',country:'Country','rpt-status':'All Statuses','rpt-product':'All Products','rpt-territory':'All Territories','rpt-dealtype':'All Types','rpt-quarter':'All Months','units-month':'All Months','units-year':'All Years','units-dealtype':'All Types','units-product':'All Products'};
+  var labels={status:'Status',product:'Product',country:'Country','rpt-status':'All Statuses','rpt-product':'All Products','rpt-territory':'All Territories','rpt-dealtype':'All Types','rpt-quarter':'All Months','units-month':'All Months','units-year':'All Years','units-dealtype':'All Types','units-status':'All Statuses','units-product':'All Products'};
   if(!vals.length){btn.textContent=(labels[name]||name)+' ▼';btn.classList.remove('active');}
   else if(vals.length===1){btn.textContent=vals[0].length>16?vals[0].slice(0,14)+'…':vals[0];btn.classList.add('active');}
   else{btn.textContent=(labels[name]||name.replace('rpt-',''))+': '+vals.length+' ▼';btn.classList.add('active');}
@@ -3882,7 +3889,7 @@ function runUnitsReport(){
   var filterYears     = getMultiFilterValues('units-year');
   var filterProducts  = getMultiFilterValues('units-product');
   var filterDealTypes = getMultiFilterValues('units-dealtype');
-  var filterStatus    = document.getElementById('units-status').value;
+  var filterStatuses  = getMultiFilterValues('units-status');
 
   // Collect all rows
   var allRows = [];
@@ -3902,7 +3909,7 @@ function runUnitsReport(){
   });
   if(filterProducts.length)  allRows = allRows.filter(function(r){return filterProducts.indexOf(r.Product||'')>=0;});
   if(filterDealTypes.length) allRows = allRows.filter(function(r){return filterDealTypes.indexOf(r['Deal Type']||'')>=0;});
-  if(filterStatus)         allRows = allRows.filter(function(r){return r.Probability === filterStatus;});
+  if(filterStatuses.length) allRows = allRows.filter(function(r){return filterStatuses.indexOf(r.Probability)>=0;});
 
   unitsReportData = allRows;
 
@@ -3945,7 +3952,7 @@ function runUnitsReport(){
   if(filterMonths.length)  titleParts.push(filterMonths.length===1?filterMonths[0]:filterMonths.length+' months');
   else if(filterYears.length) titleParts.push(filterYears.length===1?filterYears[0]:filterYears.length+' years');
   if(filterProducts.length) titleParts.push(filterProducts.length===1?filterProducts[0]:filterProducts.length+' products');
-  if(filterStatus)         titleParts.push(filterStatus);
+  if(filterStatuses.length) titleParts.push(filterStatuses.length===1?filterStatuses[0]:filterStatuses.length+' statuses');
   document.getElementById('units-title').textContent = (titleParts.length ? titleParts.join(' · ')+' — ' : '') + 'Units by Model';
   document.getElementById('units-count').textContent = allRows.length+' opportunities · '+totalUnits+' total units';
 
