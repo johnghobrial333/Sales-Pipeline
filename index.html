@@ -2462,7 +2462,23 @@ function setPageSize(n){
   document.querySelectorAll('.psbtn').forEach(function(b){b.classList.toggle('active',(b.dataset.size==='0'?0:Number(b.dataset.size))===n);});
   renderPipeline();
 }
-function applyFilters(){currentPage=1;renderPipeline();}
+function applyFilters(){
+  currentPage=1;
+  // Preserve focus on the customer input during typing
+  var activeEl = document.activeElement;
+  var activeId = activeEl ? activeEl.id : null;
+  var activeVal = activeEl ? activeEl.value : null;
+  renderPipeline();
+  // Restore focus after re-render so typing isn't interrupted
+  if(activeId==='filter-customer'){
+    var el=document.getElementById('filter-customer');
+    if(el){
+      el.focus();
+      // Restore cursor position to end
+      try{ el.setSelectionRange(el.value.length, el.value.length); }catch(e){}
+    }
+  }
+}
 function clearFilters(){
   ['filter-customer','filter-country','filter-product'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
   document.getElementById('filter-status').value='';
@@ -2533,10 +2549,6 @@ function renderPipeline(){
   var filtered=getFilteredRows();
   var total=filtered.length;
   var allRows=getCurrentRows();
-  var fC=(document.getElementById('filter-customer')||{}).value||'';
-  var fCo=(document.getElementById('filter-country')||{}).value||'';
-  var fP=(document.getElementById('filter-product')||{}).value||'';
-  var fS=(document.getElementById('filter-status')||{}).value||'';
   document.getElementById('results-count').textContent=(fC||fCo||fP||fS)
     ?(total+' of '+allRows.length+' opportunities match filters'):(total+' opportunities');
   var effPS=pageSize===0?total:pageSize;
@@ -2629,6 +2641,30 @@ function handleProductSelect(sel){
   }
 }
 
+function addCustomProduct(productName){
+  if(!productName) return;
+  if(CUSTOM_PRODUCTS.indexOf(productName) < 0){
+    CUSTOM_PRODUCTS.push(productName);
+    CUSTOM_PRODUCTS.sort();
+    try{localStorage.setItem('vitaCustomProducts_v1',JSON.stringify(CUSTOM_PRODUCTS));}catch(e){}
+  }
+}
+
+function rebuildProductDropdown(selectValue){
+  var sel = document.getElementById('f-product');
+  if(!sel) return;
+  var STANDARD = ['AI','Ceia','Explosive Detector','Spare Parts','V-50','V-50S','V-60','V-60C','V-60D','V-60S','V-6D','V-70','V-70D','V-100','V-100D','V-100DT','V-100T'];
+  var all = STANDARD.slice();
+  (CUSTOM_PRODUCTS||[]).forEach(function(p){ if(all.indexOf(p)<0) all.push(p); });
+  all.sort();
+  var h = '<option value="">-- Select product --</option>';
+  all.forEach(function(p){ h += '<option'+(p===selectValue?' selected':'')+'>'+p+'</option>'; });
+  h += '<option value="__new__">+ Add new product...</option>';
+  sel.innerHTML = h;
+  var inp = document.getElementById('f-product-new');
+  if(inp){ inp.style.display='none'; inp.value=''; }
+}
+
 function getProductValue(){
   var sel = document.getElementById('f-product');
   if(sel.value === '__new__'){
@@ -2638,6 +2674,8 @@ function getProductValue(){
 }
 
 function openAddModal(){
+  // Rebuild product dropdown with any custom products added previously
+  if(typeof rebuildProductDropdown==='function') rebuildProductDropdown('');
   var atf=document.getElementById('admin-territory-field');
   if(isAdmin){atf.style.display='block';document.getElementById('f-territory').value=currentRegion||'North America';
     document.getElementById('opp-modal-sub').textContent='Select a territory and fill in the opportunity details.';}
@@ -2766,12 +2804,10 @@ function saveRow(){
     pipelineData[targetRegion].push(newRow);
     logActivity('added', targetRegion, dist+' · '+product, '$'+amt.toLocaleString('en-US')+' · '+prob);
   }
-  // If new product was added, inject it into the dropdown for future use
-  if(document.getElementById('f-product').value === '__new__' && product){
-    var sel = document.getElementById('f-product');
-    var newOpt = document.createElement('option');
-    newOpt.value = product; newOpt.textContent = product;
-    sel.insertBefore(newOpt, sel.options[sel.options.length-1]);
+  // If new product was added, save it permanently
+  if(document.getElementById('f-product') && document.getElementById('f-product').value === '__new__' && product){
+    if(typeof addCustomProduct==='function') addCustomProduct(product);
+    if(typeof rebuildProductDropdown==='function') rebuildProductDropdown(product);
   }
   closeModal('opp-modal');saveToStorage();showSaved();
   if(isAdmin&&targetRegion!==currentRegion){adminSwitchRegion(targetRegion);}else{renderPipeline();}
