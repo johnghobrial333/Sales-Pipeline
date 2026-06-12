@@ -2464,19 +2464,41 @@ function setPageSize(n){
   renderPipeline();
 }
 function applyFilters(){
-  currentPage=1;
-  var isTextFilter = document.activeElement && document.activeElement.id==='filter-customer';
-  var cursorPos = isTextFilter ? document.activeElement.selectionStart : -1;
-  renderPipeline();
-  // Restore focus after re-render - use longer timeout for Safari compatibility
-  if(isTextFilter){
-    setTimeout(function(){
-      var el=document.getElementById('filter-customer');
-      if(!el) return;
-      el.focus();
-      try{ if(cursorPos>=0) el.setSelectionRange(cursorPos,cursorPos); }catch(e){}
-    }, 50); // 50ms is enough for Safari to finish DOM paint
+  // If only the customer text filter changed (user is typing), use fast DOM filter
+  // This avoids re-rendering the whole table which causes focus loss in Safari
+  var activeEl = document.activeElement;
+  var typingInCustomer = activeEl && activeEl.id === 'filter-customer';
+
+  if(typingInCustomer){
+    _applyCustomerFilter();
+    return;
   }
+  // For checkbox filters, do a full re-render
+  currentPage=1;
+  renderPipeline();
+}
+
+function _applyCustomerFilter(){
+  var fC = (document.getElementById('filter-customer').value||'').toLowerCase();
+  var tbody = document.getElementById('pipeline-tbody');
+  if(!tbody) return;
+  var rows = tbody.querySelectorAll('tr');
+  var visible = 0;
+  rows.forEach(function(tr){
+    if(tr.querySelector('.empty-state')){ tr.style.display=''; return; }
+    var distCell = tr.querySelector('td:nth-child(2)');
+    if(!distCell){ tr.style.display=''; visible++; return; }
+    var text = (distCell.textContent||'').toLowerCase();
+    var show = !fC || text.indexOf(fC) >= 0;
+    tr.style.display = show ? '' : 'none';
+    if(show) visible++;
+  });
+  // Update results count
+  var allRows = getCurrentRows();
+  var rc = document.getElementById('results-count');
+  if(rc) rc.textContent = fC
+    ? (visible+' of '+allRows.length+' opportunities')
+    : (allRows.length+' opportunities');
 }
 function clearFilters(){
   ['filter-customer','filter-country','filter-product'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
