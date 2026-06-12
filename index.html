@@ -837,13 +837,13 @@ body.light-theme .import-modal .modal,body.light-theme .user-modal .modal{backgr
               <div class="multi-filter-wrap">
                 <button class="multi-filter-btn" onclick="toggleMultiFilter('units-year')" id="mfb-units-year" style="width:110px;text-align:left">All Years &#9660;</button>
                 <div class="multi-filter-drop" id="mfd-units-year" style="display:none">
-                  <label><input type="checkbox" value="2024" onchange="updateFilterBtn('units-year')"> 2024</label>
-                  <label><input type="checkbox" value="2025" onchange="updateFilterBtn('units-year')"> 2025</label>
-                  <label><input type="checkbox" value="2026" onchange="updateFilterBtn('units-year')"> 2026</label>
-                  <label><input type="checkbox" value="2027" onchange="updateFilterBtn('units-year')"> 2027</label>
-                  <label><input type="checkbox" value="2028" onchange="updateFilterBtn('units-year')"> 2028</label>
-                  <label><input type="checkbox" value="2029" onchange="updateFilterBtn('units-year')"> 2029</label>
-                  <label><input type="checkbox" value="2030" onchange="updateFilterBtn('units-year')"> 2030</label>
+                  <label><input type="checkbox" value="2024" onchange="updateFilterBtn('units-year');filterMonthsByYear()"> 2024</label>
+                  <label><input type="checkbox" value="2025" onchange="updateFilterBtn('units-year');filterMonthsByYear()"> 2025</label>
+                  <label><input type="checkbox" value="2026" onchange="updateFilterBtn('units-year');filterMonthsByYear()"> 2026</label>
+                  <label><input type="checkbox" value="2027" onchange="updateFilterBtn('units-year');filterMonthsByYear()"> 2027</label>
+                  <label><input type="checkbox" value="2028" onchange="updateFilterBtn('units-year');filterMonthsByYear()"> 2028</label>
+                  <label><input type="checkbox" value="2029" onchange="updateFilterBtn('units-year');filterMonthsByYear()"> 2029</label>
+                  <label><input type="checkbox" value="2030" onchange="updateFilterBtn('units-year');filterMonthsByYear()"> 2030</label>
                 </div>
               </div>
             </div>
@@ -878,6 +878,17 @@ body.light-theme .import-modal .modal,body.light-theme .user-modal .modal{backgr
                   <label><input type="checkbox" value="V-100D" onchange="updateFilterBtn('units-product')"> V-100D</label>
                   <label><input type="checkbox" value="V-100DT" onchange="updateFilterBtn('units-product')"> V-100DT</label>
                   <label><input type="checkbox" value="V-100T" onchange="updateFilterBtn('units-product')"> V-100T</label>
+                </div>
+              </div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:6px;">
+              <label style="font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--text3)">Deal Type</label>
+              <div class="multi-filter-wrap">
+                <button class="multi-filter-btn" onclick="toggleMultiFilter('units-dealtype')" id="mfb-units-dealtype" style="width:130px;text-align:left">All Types &#9660;</button>
+                <div class="multi-filter-drop" id="mfd-units-dealtype" style="display:none">
+                  <label><input type="checkbox" value="Sale" onchange="updateFilterBtn('units-dealtype')"> Sale</label>
+                  <label><input type="checkbox" value="Rental" onchange="updateFilterBtn('units-dealtype')"> Rental</label>
+                  <label><input type="checkbox" value="Lease" onchange="updateFilterBtn('units-dealtype')"> Lease</label>
                 </div>
               </div>
             </div>
@@ -2225,7 +2236,7 @@ function emptyRecycleBin(){
 }
 
 
-var _ALL_FILTERS=['status','product','country','rpt-status','rpt-product','rpt-dealtype','rpt-territory','rpt-quarter','units-month','units-year','units-product'];
+var _ALL_FILTERS=['status','product','country','rpt-status','rpt-product','rpt-dealtype','rpt-territory','rpt-quarter','units-month','units-year','units-product','units-dealtype'];
 function toggleMultiFilter(name){
   var drop=document.getElementById('mfd-'+name);
   if(!drop) return;
@@ -2247,7 +2258,7 @@ function updateFilterBtn(name){
   var btn=document.getElementById('mfb-'+name);
   if(!btn) return;
   var vals=getMultiFilterValues(name);
-  var labels={status:'Status',product:'Product',country:'Country','rpt-status':'All Statuses','rpt-product':'All Products','rpt-territory':'All Territories','rpt-dealtype':'All Types','rpt-quarter':'All Months','units-month':'All Months','units-year':'All Years','units-product':'All Products'};
+  var labels={status:'Status',product:'Product',country:'Country','rpt-status':'All Statuses','rpt-product':'All Products','rpt-territory':'All Territories','rpt-dealtype':'All Types','rpt-quarter':'All Months','units-month':'All Months','units-year':'All Years','units-dealtype':'All Types','units-product':'All Products'};
   if(!vals.length){btn.textContent=(labels[name]||name)+' ▼';btn.classList.remove('active');}
   else if(vals.length===1){btn.textContent=vals[0].length>16?vals[0].slice(0,14)+'…':vals[0];btn.classList.add('active');}
   else{btn.textContent=(labels[name]||name.replace('rpt-',''))+': '+vals.length+' ▼';btn.classList.add('active');}
@@ -3791,11 +3802,43 @@ function confirmResetPassword(){
 // ══════════════════════════════════════════════════════════
 var unitsReportData = [];
 
+
+function filterMonthsByYear(){
+  var selectedYears = getMultiFilterValues('units-year');
+  var drop = document.getElementById('mfd-units-month');
+  if(!drop) return;
+  var labels = drop.querySelectorAll('label');
+  labels.forEach(function(lbl){
+    var val = lbl.querySelector('input') ? lbl.querySelector('input').value : '';
+    // val is like "Jan-2025" - extract year
+    var yearPart = val.split('-')[1];
+    if(!selectedYears.length || selectedYears.indexOf(yearPart) >= 0){
+      lbl.style.display = '';
+    } else {
+      lbl.style.display = 'none';
+      // Uncheck hidden months
+      var cb = lbl.querySelector('input');
+      if(cb) cb.checked = false;
+    }
+  });
+  updateFilterBtn('units-month');
+  // Update button label
+  var btn = document.getElementById('mfb-units-month');
+  if(btn && selectedYears.length){
+    btn.textContent = selectedYears.join(', ')+' ▼';
+    btn.classList.add('active');
+  } else if(btn){
+    btn.textContent = 'All Months ▼';
+    btn.classList.remove('active');
+  }
+}
+
 function runUnitsReport(){
   var filterTerritory = document.getElementById('units-territory').value;
   var filterMonths    = getMultiFilterValues('units-month');
   var filterYears     = getMultiFilterValues('units-year');
   var filterProducts  = getMultiFilterValues('units-product');
+  var filterDealTypes = getMultiFilterValues('units-dealtype');
   var filterStatus    = document.getElementById('units-status').value;
 
   // Collect all rows
@@ -3813,7 +3856,8 @@ function runUnitsReport(){
     var sq=r['Shipping Quarter']||'';
     return filterYears.some(function(y){return sq.indexOf('-'+y)>=0;});
   });
-  if(filterProducts.length) allRows = allRows.filter(function(r){return filterProducts.indexOf(r.Product||'')>=0;});
+  if(filterProducts.length)  allRows = allRows.filter(function(r){return filterProducts.indexOf(r.Product||'')>=0;});
+  if(filterDealTypes.length) allRows = allRows.filter(function(r){return filterDealTypes.indexOf(r['Deal Type']||'')>=0;});
   if(filterStatus)         allRows = allRows.filter(function(r){return r.Probability === filterStatus;});
 
   unitsReportData = allRows;
