@@ -2464,19 +2464,19 @@ function setPageSize(n){
 }
 function applyFilters(){
   currentPage=1;
-  // Preserve focus on the customer input during typing
-  var activeEl = document.activeElement;
-  var activeId = activeEl ? activeEl.id : null;
-  var activeVal = activeEl ? activeEl.value : null;
+  var activeId = document.activeElement ? document.activeElement.id : null;
+  var cursorPos = (activeId==='filter-customer' && document.getElementById('filter-customer'))
+    ? document.getElementById('filter-customer').value.length : -1;
   renderPipeline();
-  // Restore focus after re-render so typing isn't interrupted
+  // Safari needs a small delay before focus() works after DOM re-render
   if(activeId==='filter-customer'){
-    var el=document.getElementById('filter-customer');
-    if(el){
-      el.focus();
-      // Restore cursor position to end
-      try{ el.setSelectionRange(el.value.length, el.value.length); }catch(e){}
-    }
+    setTimeout(function(){
+      var el=document.getElementById('filter-customer');
+      if(el && document.activeElement !== el){
+        el.focus();
+        try{ if(cursorPos>=0) el.setSelectionRange(cursorPos,cursorPos); }catch(e){}
+      }
+    }, 0);
   }
 }
 function clearFilters(){
@@ -2740,7 +2740,8 @@ function editRow(region, idx){
   sqSel.value = sqOpts.indexOf(row['Shipping Quarter']||'') >= 0 ? (row['Shipping Quarter']||'') : '';
   document.getElementById('f-notes').value = row.Notes||'';
   // Store edit context
-  document.getElementById('f-edit-idx').value = idx;
+  // Store _id for reliable row lookup (not fragile filtered index)
+  document.getElementById('f-edit-idx').value = row._id || idx;
   document.getElementById('f-edit-region').value = region;
   document.getElementById('opp-modal').classList.add('open');
 }
@@ -2781,22 +2782,32 @@ function saveRow(){
   var editIdx = document.getElementById('f-edit-idx').value;
   var editRegion = document.getElementById('f-edit-region').value;
   if(editIdx !== '' && editRegion){
-    // EDIT MODE — find and replace in source array
-    var filtered = getFilteredRows();
-    var oldRow = filtered[Number(editIdx)];
-    if(oldRow){
-      var arr = pipelineData[editRegion];
-      var ri = arr.findIndex(function(r){
-        return r.Distributor===oldRow.Distributor&&r['Amount USD']===oldRow['Amount USD']&&r.Product===oldRow.Product&&r.Country===oldRow.Country;
-      });
-      if(ri >= 0){
-        // If territory changed (admin only), remove from old and add to new
-        if(targetRegion !== editRegion){
-          arr.splice(ri, 1);
-          pipelineData[targetRegion].push(newRow);
-        } else {
-          pipelineData[editRegion][ri] = newRow;
-        }
+    // EDIT MODE — find row by _id first, then by matching fields
+    var arr = pipelineData[editRegion];
+    var ri = -1;
+    // Try _id lookup first (most reliable)
+    if(editIdx.indexOf('opp_') === 0){
+      ri = arr.findIndex(function(r){ return r._id === editIdx; });
+    }
+    // Fallback: use filtered index
+    if(ri < 0){
+      var filtered = getFilteredRows();
+      var oldRow = filtered[Number(editIdx)];
+      if(oldRow){
+        ri = arr.findIndex(function(r){
+          return r._id ? r._id === oldRow._id :
+            (r.Distributor===oldRow.Distributor&&r['Amount USD']===oldRow['Amount USD']&&r.Product===oldRow.Product&&r.Country===oldRow.Country);
+        });
+      }
+    }
+    if(ri >= 0){
+      var oldRow = arr[ri];
+      // If territory changed (admin only), remove from old and add to new
+      if(targetRegion !== editRegion){
+        arr.splice(ri, 1);
+        pipelineData[targetRegion].push(newRow);
+      } else {
+        pipelineData[editRegion][ri] = newRow;
       }
     }
     logActivity('status', targetRegion, dist+' · '+product, 'Opportunity edited');
