@@ -2719,7 +2719,7 @@ function addCustomProduct(productName){
 function rebuildProductDropdown(selectValue){
   var sel = document.getElementById('f-product');
   if(!sel) return;
-  var STANDARD = ['AI','Ceia','Explosive Detector','Spare Parts','V-50','V-50S','V-60','V-60C','V-60D','V-60S','V-6D','V-70','V-70D','V-100','V-100D','V-100DT','V-100T'];
+  var STANDARD = ['AI','Ceia','Explosive Detector','Shipping','Spare Parts','V-50','V-50S','V-60','V-60C','V-60D','V-60S','V-70','V-70D','V-100','V-100D','V-100DT','V-100T'];
   var all = STANDARD.slice();
   (CUSTOM_PRODUCTS||[]).forEach(function(p){ if(all.indexOf(p)<0) all.push(p); });
   all.sort();
