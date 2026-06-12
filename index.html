@@ -3031,7 +3031,9 @@ function renderAnalytics(){
     drop.innerHTML=Object.keys(prods).sort().map(function(p){return '<label><input type="checkbox" value="'+p.replace(/"/g,'&quot;')+'" onchange="updateFilterBtn(\'rpt-product\')"> '+p+'</label>';}).join('');
   })();
   var allRows=[];
-  for(var r in pipelineData){ if(Array.isArray(pipelineData[r])) allRows=allRows.concat(pipelineData[r].map(function(row){return Object.assign({},row,{_region:r});})); };
+  ['North America','South America','EMEA','ASPC'].forEach(function(r){
+    (pipelineData[r]||[]).forEach(function(row){ allRows.push(Object.assign({},row,{_region:r})); });
+  });;
   // Total Pipeline = all EXCEPT Lost, Received PO - Pending Shipping, Received PO - Shipped
   var pipelineStatuses=['Lost','Received PO - Pending Shipping','Received PO - Shipped'];
   var total=allRows.filter(function(r){return pipelineStatuses.indexOf(r.Probability)<0;})
@@ -3454,9 +3456,9 @@ function runCustomReport(){
 
   // Collect all rows
   var allRows = [];
-  for(var r in pipelineData){
+  ['North America','South America','EMEA','ASPC'].forEach(function(r){
     if(Array.isArray(pipelineData[r])) pipelineData[r].forEach(function(row){ if(row&&typeof row==='object') allRows.push(Object.assign({},row,{_region:r})); });
-  }
+  });
 
   // Apply filters
   if(filterRegions.length)   allRows = allRows.filter(function(r){return filterRegions.indexOf(r._region)>=0;});
@@ -3843,11 +3845,12 @@ function runUnitsReport(){
 
   // Collect all rows
   var allRows = [];
-  for(var r in pipelineData){
-    pipelineData[r].forEach(function(row){
+  var VALID_REGIONS = ['North America','South America','EMEA','ASPC'];
+  VALID_REGIONS.forEach(function(r){
+    (pipelineData[r]||[]).forEach(function(row){
       allRows.push(Object.assign({},row,{_region:r}));
     });
-  }
+  });
 
   // Apply filters
   if(filterTerritory)     allRows = allRows.filter(function(r){return r._region === filterTerritory;});
