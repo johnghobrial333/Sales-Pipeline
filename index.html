@@ -2627,7 +2627,7 @@ function renderPipeline(){
         '<td style="text-align:center">'+(row['# Units']||'')+'</td>'+
         '<td style="color:var(--text2)">'+esc(row.Timeframe)+'</td>'+
         '<td class="amount">$'+fmtN(row['Amount USD'])+'</td>'+
-        '<td><select class="status-select" onchange="updateStatus(\''+region+'\','+gi+',this.value)">'+opts+'</select></td>'+
+        '<td><select class="status-select" onchange="updateStatus(\''+region+'\',\''+esc(row._id||String(gi))+'\',this.value)">'+opts+'</select></td>'+
         '<td style="text-align:center">'+(row['Prob %']!==''&&row['Prob %']!==undefined?(Number(row['Prob %'])*100).toFixed(0)+'%':'')+'</td>'+
         '<td class="amount'+(wf>0?' amount-pos':'')+'">$'+fmtN(wf)+'</td>'+
         '<td style="color:var(--text2);font-size:11px">'+
@@ -2636,7 +2636,7 @@ function renderPipeline(){
         '<td style="color:var(--text2)">'+esc(row['Shipping Quarter'])+'</td>'+
         '<td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text3)" title="'+esc(row.Notes)+'">'+esc(row.Notes)+'</td>'+
         '<td style="font-size:10px;color:var(--text3);white-space:nowrap" title="Added by: '+(row._createdBy||'?')+'">'+(row._createdAt?new Date(row._createdAt).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}):'')+'</td>'+
-        '<td><button class="btn-edit" onclick="editRow(\''+region+'\','+gi+')">✎</button><button class="btn-copy" onclick="copyRow(\''+region+'\','+gi+')" title="Copy opportunity">⧉</button><button class="btn-xsm" onclick="deleteRow(\''+region+'\','+gi+')">✕</button></td>'+
+        '<td><button class="btn-edit" onclick="editRow(\''+region+'\',\''+esc(row._id||String(gi))+'\')">✎</button><button class="btn-copy" onclick="copyRow(\''+region+'\','+gi+')" title="Copy opportunity">⧉</button><button class="btn-xsm" onclick="deleteRow(\''+region+'\','+gi+')">✕</button></td>'+
       '</tr>';
     }).join('');
   }
@@ -2660,13 +2660,29 @@ function renderPipeline(){
 //  MUTATIONS
 // ══════════════════════════════════════════════════════════
 function updateStatus(region,idx,val){
-  var filtered=getFilteredRows();var row=filtered[idx];if(!row)return;
-  var oldVal=row.Probability||'—';
   var arr=pipelineData[region];
-  var ri=row._id?arr.findIndex(function(r){return r._id===row._id;}):-1;
-  if(ri<0) ri=arr.findIndex(function(r){return r.Distributor===row.Distributor&&r['Amount USD']===row['Amount USD']&&r.Product===row.Product&&r.Country===row.Country;});
-  if(ri>=0){arr[ri].Probability=val;arr[ri]['Prob %']=STATUS_PROB[val]||0;arr[ri]['Weighted  Forecast']=(Number(arr[ri]['Amount USD'])||0)*(STATUS_PROB[val]||0);}
-  logActivity('status',region,row.Distributor+' · '+row.Product,'From: '+oldVal+' → '+val);
+  if(!arr){console.error('[VITA] updateStatus: no data for',region);return;}
+  var ri=-1;
+  // Try _id first (most reliable - idx may be an _id string)
+  if(typeof idx==='string' && idx.indexOf('opp_')===0){
+    ri=arr.findIndex(function(r){return r._id===idx;});
+  }
+  // Fallback: numeric index in filtered rows
+  if(ri<0){
+    var filtered=getFilteredRows();
+    var row=filtered[Number(idx)];
+    if(row){
+      ri=row._id?arr.findIndex(function(r){return r._id===row._id;}):
+        arr.findIndex(function(r){return r.Distributor===row.Distributor&&String(r['Amount USD'])===String(row['Amount USD'])&&r.Product===row.Product;});
+    }
+  }
+  if(ri<0){console.warn('[VITA] updateStatus: row not found',idx);return;}
+  var row=arr[ri];
+  var oldVal=row.Probability||'—';
+  arr[ri].Probability=val;
+  arr[ri]['Prob %']=STATUS_PROB[val]||0;
+  arr[ri]['Weighted  Forecast']=(Number(arr[ri]['Amount USD'])||0)*(STATUS_PROB[val]||0);
+  logActivity('status',region,(row.Distributor||'?')+' · '+(row.Product||'?'),'From: '+oldVal+' → '+val);
   saveToStorage();showSaved();renderPipeline();
 }
 function deleteRow(region,idx){
@@ -2759,8 +2775,18 @@ function openAddModal(){
 }
 
 function editRow(region, idx){
-  var filtered = getFilteredRows();
-  var row = filtered[idx];
+  var arr = pipelineData[region]||[];
+  var row = null;
+  // Try _id lookup first
+  if(typeof idx==='string' && idx.indexOf('opp_')===0){
+    row = arr.find(function(r){return r._id===idx;});
+    if(row) row = Object.assign({},row,{_region:region});
+  }
+  // Fallback: numeric index in filtered rows
+  if(!row){
+    var filtered = getFilteredRows();
+    row = filtered[Number(idx)];
+  }
   if(!row) return;
   // Pre-fill modal with row data
   document.getElementById('opp-modal-title').textContent = 'Edit Opportunity';
