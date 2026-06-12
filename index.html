@@ -2549,7 +2549,8 @@ function renderPipeline(){
   var filtered=getFilteredRows();
   var total=filtered.length;
   var allRows=getCurrentRows();
-  document.getElementById('results-count').textContent=(fC||fCo||fP||fS)
+  var hasFilter = filtered.length < allRows.length;
+  document.getElementById('results-count').textContent = hasFilter
     ?(total+' of '+allRows.length+' opportunities match filters'):(total+' opportunities');
   var effPS=pageSize===0?total:pageSize;
   var totalPages=effPS>0?Math.ceil(total/effPS):1;
