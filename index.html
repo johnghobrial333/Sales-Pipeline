@@ -1497,6 +1497,7 @@ var pipelineData = JSON.parse(JSON.stringify(INITIAL_DATA));
 var territoryNames = {'North America':'North America','South America':'South America','EMEA':'EMEA','ASPC':'ASPC'};
 var currentRegion = null, isAdmin = false, adminViewRegion = 'analytics';
 var currentPage = 1, pageSize = 25, sortCol = null, sortDir = 1;
+var editingRow = null; // currently-being-edited row object
 var selectedRows = {}, isSaving = false, lastSyncTime = 0;
 var _saveQueued = false, _retryCount = 0;
 var _savePending = false;
@@ -2419,7 +2420,7 @@ function saveRename(){
   var tsBtn=document.querySelector('.tsw-btn[data-region="'+currentRegion+'"]');if(tsBtn)tsBtn.textContent=n;
   closeModal('rename-modal');showSaved();renderPipeline();
 }
-function closeModal(id){document.getElementById(id).classList.remove('open');}
+function closeModal(id){document.getElementById(id).classList.remove('open');if(id==='opp-modal')editingRow=null;}
 
 // ══════════════════════════════════════════════════════════
 //  DATA HELPERS
@@ -2464,19 +2465,17 @@ function setPageSize(n){
 }
 function applyFilters(){
   currentPage=1;
-  var activeId = document.activeElement ? document.activeElement.id : null;
-  var cursorPos = (activeId==='filter-customer' && document.getElementById('filter-customer'))
-    ? document.getElementById('filter-customer').value.length : -1;
+  var isTextFilter = document.activeElement && document.activeElement.id==='filter-customer';
+  var cursorPos = isTextFilter ? document.activeElement.selectionStart : -1;
   renderPipeline();
-  // Safari needs a small delay before focus() works after DOM re-render
-  if(activeId==='filter-customer'){
+  // Restore focus after re-render - use longer timeout for Safari compatibility
+  if(isTextFilter){
     setTimeout(function(){
       var el=document.getElementById('filter-customer');
-      if(el && document.activeElement !== el){
-        el.focus();
-        try{ if(cursorPos>=0) el.setSelectionRange(cursorPos,cursorPos); }catch(e){}
-      }
-    }, 0);
+      if(!el) return;
+      el.focus();
+      try{ if(cursorPos>=0) el.setSelectionRange(cursorPos,cursorPos); }catch(e){}
+    }, 50); // 50ms is enough for Safari to finish DOM paint
   }
 }
 function clearFilters(){
@@ -2675,6 +2674,7 @@ function getProductValue(){
 }
 
 function openAddModal(){
+  editingRow = null; // clear any previous edit state
   // Rebuild product dropdown with any custom products added previously
   if(typeof rebuildProductDropdown==='function') rebuildProductDropdown('');
   var atf=document.getElementById('admin-territory-field');
@@ -2740,7 +2740,7 @@ function editRow(region, idx){
   sqSel.value = sqOpts.indexOf(row['Shipping Quarter']||'') >= 0 ? (row['Shipping Quarter']||'') : '';
   document.getElementById('f-notes').value = row.Notes||'';
   // Store edit context
-  // Store _id for reliable row lookup (not fragile filtered index)
+  editingRow = row; // save full row for _createdAt/_createdBy preservation
   document.getElementById('f-edit-idx').value = row._id || idx;
   document.getElementById('f-edit-region').value = region;
   document.getElementById('opp-modal').classList.add('open');
