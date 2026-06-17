@@ -3947,7 +3947,18 @@ function runUnitsReport(){
 
   // Apply filters
   if(filterTerritory)     allRows = allRows.filter(function(r){return r._region === filterTerritory;});
-  if(filterMonths.length)  allRows = allRows.filter(function(r){return filterMonths.indexOf(r['Shipping Quarter']||'')>=0;});
+  if(filterMonths.length)  allRows = allRows.filter(function(r){
+    var sq = r['Shipping Quarter']||'';
+    if(filterMonths.indexOf(sq)>=0) return true;
+    // Safety net: tolerate quarter-format dates (e.g. 'Q1-2026') by mapping to their first month
+    var qm = sq.match(/^Q([1-4])-(\d{2,4})$/);
+    if(qm){
+      var qNum = qm[1], yr = qm[2].length===2 ? '20'+qm[2] : qm[2];
+      var firstMonth = ['Jan','Apr','Jul','Oct'][Number(qNum)-1];
+      return filterMonths.indexOf(firstMonth+'-'+yr) >= 0;
+    }
+    return false;
+  });
   if(filterYears.length)   allRows = allRows.filter(function(r){
     var sq=r['Shipping Quarter']||'';
     return filterYears.some(function(y){return sq.indexOf('-'+y)>=0;});
