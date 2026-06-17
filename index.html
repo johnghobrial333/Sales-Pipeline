@@ -1762,7 +1762,22 @@ function saveToCloud(){
   showCloudStatus('Saving...','syncing');
 
   var REGIONS=['North America','South America','EMEA','ASPC'];
-  var myTerritories=isAdmin?REGIONS:(userTerritories||REGIONS);
+  // CRITICAL FIX: Admin should only overwrite territories they are actively viewing/editing,
+  // not ALL territories blindly. Previously this caused stale admin-side data for
+  // territories the admin wasn't actively working in to silently overwrite newer cloud data
+  // for those territories (root cause of the 31-row data loss on 2026-06-17).
+  var myTerritories;
+  if(isAdmin){
+    // Admin only overwrites the territory currently being viewed, or all if on analytics/activity
+    if(adminViewRegion && REGIONS.indexOf(adminViewRegion)>=0){
+      myTerritories = [adminViewRegion];
+    } else {
+      // On analytics/activity/overview - don't overwrite any territory data at all
+      myTerritories = [];
+    }
+  } else {
+    myTerritories = userTerritories||[];
+  }
 
   // Always fetch fresh SHA before writing (prevents 409 conflicts)
   fetch('https://api.github.com/repos/'+GITHUB_REPO+'/contents/'+GITHUB_FILE+'?ref='+GITHUB_BRANCH+'&t='+Date.now(),{
